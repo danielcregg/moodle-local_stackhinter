@@ -29,7 +29,8 @@ Per-quiz control: teachers choose which quizzes get the tutor (off by default).
 
 ### Changed
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets
-  its own hint allowance (default 3). An upgrade adds the column and removes the old site setting.
+  its own hint allowance (a 1–10 dropdown, default 3). An upgrade adds the column and removes the old site
+  setting.
 - The site "Enable STACK AI Hinter" description now explains the two-layer model (the site enables the tutor;
   teachers choose per quiz).
 
