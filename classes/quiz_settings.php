@@ -47,26 +47,45 @@ class quiz_settings {
     }
 
     /**
-     * Set (insert or update) the per-quiz opt-in flag.
+     * The per-quiz "max hints per question" value (default 3 when not set).
+     *
+     * @param int $cmid The quiz course-module id.
+     * @return int The max hints per question (at least 1).
+     */
+    public static function get_maxhints(int $cmid): int {
+        global $DB;
+        if ($cmid <= 0) {
+            return 3;
+        }
+        $value = $DB->get_field('local_stackhinter_quiz', 'maxhints', ['cmid' => $cmid]);
+        return $value ? max(1, (int) $value) : 3;
+    }
+
+    /**
+     * Save (insert or update) the per-quiz settings: opt-in flag + max hints per question.
      *
      * @param int $cmid The quiz course-module id.
      * @param bool $enabled Whether the tutor is enabled for this quiz.
+     * @param int $maxhints Max escalating hints per question (clamped to 1..50).
      * @return void
      */
-    public static function set_enabled(int $cmid, bool $enabled): void {
+    public static function save(int $cmid, bool $enabled, int $maxhints = 3): void {
         global $DB;
         if ($cmid <= 0) {
             return;
         }
+        $maxhints = max(1, min(50, $maxhints));
         $existing = $DB->get_record('local_stackhinter_quiz', ['cmid' => $cmid]);
         if ($existing) {
             $existing->enabled = $enabled ? 1 : 0;
+            $existing->maxhints = $maxhints;
             $existing->timemodified = time();
             $DB->update_record('local_stackhinter_quiz', $existing);
         } else {
             $DB->insert_record('local_stackhinter_quiz', (object) [
                 'cmid' => $cmid,
                 'enabled' => $enabled ? 1 : 0,
+                'maxhints' => $maxhints,
                 'timemodified' => time(),
             ]);
         }

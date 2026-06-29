@@ -17,8 +17,8 @@
 /**
  * Library callbacks for local_stackhinter.
  *
- * Adds a per-quiz "enable STACK AI Hinter" checkbox (off by default) to the quiz settings form, so a teacher
- * turns the tutor on only for the quizzes they choose. The hint button therefore never appears on a
+ * Adds per-quiz STACK AI Hinter settings (enable checkbox + max hints per question) to the quiz form, so a
+ * teacher turns the tutor on only for the quizzes they choose. The hint button therefore never appears on a
  * quiz nobody opted in — including graded exams. The field is shown only when an administrator has
  * enabled the plugin site-wide (no dead control), and only on quiz modules.
  *
@@ -54,6 +54,12 @@ function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) 
     );
     $mform->addHelpButton('local_stackhinter_enabled', 'perquizenable', 'local_stackhinter');
     $mform->setDefault('local_stackhinter_enabled', 0); // Off by default (covers newly created quizzes).
+
+    $mform->addElement('text', 'local_stackhinter_maxhints', get_string('maxhints', 'local_stackhinter'), ['size' => 4]);
+    $mform->setType('local_stackhinter_maxhints', PARAM_INT);
+    $mform->setDefault('local_stackhinter_maxhints', 3);
+    $mform->addHelpButton('local_stackhinter_maxhints', 'maxhints', 'local_stackhinter');
+    $mform->disabledIf('local_stackhinter_maxhints', 'local_stackhinter_enabled', 'notchecked');
 }
 
 /**
@@ -75,6 +81,8 @@ function local_stackhinter_coursemodule_definition_after_data($formwrapper, $mfo
     if ($cmid > 0) {
         $mform->getElement('local_stackhinter_enabled')
             ->setValue(\local_stackhinter\quiz_settings::is_enabled($cmid) ? 1 : 0);
+        $mform->getElement('local_stackhinter_maxhints')
+            ->setValue((string) \local_stackhinter\quiz_settings::get_maxhints($cmid));
     }
 }
 
@@ -92,7 +100,12 @@ function local_stackhinter_coursemodule_edit_post_actions($data, $course) {
     // Only act when the field was actually present on the form. When the plugin is disabled site-wide
     // the field is hidden and absent here — in that case we must NOT clear a teacher's saved choice.
     if (property_exists($data, 'local_stackhinter_enabled') && !empty($data->coursemodule)) {
-        \local_stackhinter\quiz_settings::set_enabled((int) $data->coursemodule, !empty($data->local_stackhinter_enabled));
+        $maxhints = isset($data->local_stackhinter_maxhints) ? (int) $data->local_stackhinter_maxhints : 3;
+        \local_stackhinter\quiz_settings::save(
+            (int) $data->coursemodule,
+            !empty($data->local_stackhinter_enabled),
+            $maxhints
+        );
     }
     return $data;
 }

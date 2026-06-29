@@ -56,7 +56,7 @@ class hook_callbacks {
             'ajaxurl'  => (new \moodle_url('/local/stackhinter/ajax.php'))->out(false),
             'sesskey'  => sesskey(),
             'cmid'     => $cmid,
-            'maxhints' => (int) (get_config('local_stackhinter', 'maxhints') ?: 3),
+            'maxhints' => quiz_settings::get_maxhints($cmid),
             'label'    => get_string('hintbutton', 'local_stackhinter'),
             'strings' => [
                 'thinking'    => get_string('hintthinking', 'local_stackhinter'),

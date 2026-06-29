@@ -83,7 +83,7 @@ if (!\local_stackhinter\stack_grounding::owns_attempt($cm, (int) $USER->id, $qub
 try {
     // Server-side abuse/cost cap: a hard ceiling on hints per user per quiz module.
     // (The per-question escalation cap in the JS is just UX.)
-    $maxhints = (int) (get_config('local_stackhinter', 'maxhints') ?: 3);
+    $maxhints = \local_stackhinter\quiz_settings::get_maxhints($cmid);
     $ceiling  = max(10, $maxhints * 20);
     if ($DB->count_records('local_stackhinter_hints', ['userid' => $USER->id, 'cmid' => $cmid]) >= $ceiling) {
         echo json_encode(['hint' => get_string('hintlimitreached', 'local_stackhinter')]);

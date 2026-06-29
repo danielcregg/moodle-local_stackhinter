@@ -57,7 +57,9 @@ and does nothing until you:
 | **AI provider** | Which external service generates hints (used by the own-provider backend). |
 | **Model** | The model id, e.g. `gpt-4o-mini`, `gemini-2.5-flash`, `claude-3-5-haiku`. |
 | **AI API key** | Stored server-side, never sent to the browser. |
-| **Max hints per question** | Escalation cap per question (a separate hard server cap prevents abuse). |
+
+**Per quiz** (in each quiz's *Settings → STACK AI Hinter*): a teacher enables the tutor on that quiz (off by
+default) and sets the **max hints per question** for it (a separate hard server cap also prevents abuse).
 
 ## How it works
 

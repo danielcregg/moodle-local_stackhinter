@@ -28,6 +28,8 @@ Per-quiz control: teachers choose which quizzes get the tutor (off by default).
   crafted request cannot use the tutor on a quiz that did not enable it.
 
 ### Changed
+- **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets
+  its own hint allowance (default 3). An upgrade adds the column and removes the old site setting.
 - The site "Enable STACK AI Hinter" description now explains the two-layer model (the site enables the tutor;
   teachers choose per quiz).
 

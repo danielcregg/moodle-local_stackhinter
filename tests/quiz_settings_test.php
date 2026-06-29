@@ -47,22 +47,36 @@ final class quiz_settings_test extends \advanced_testcase {
      *
      * @return void
      */
-    public function test_set_enabled_round_trips(): void {
+    public function test_save_round_trips(): void {
         global $DB;
         $this->resetAfterTest();
 
-        quiz_settings::set_enabled(777, true);
+        quiz_settings::save(777, true);
         $this->assertTrue(quiz_settings::is_enabled(777));
         $this->assertEquals(1, $DB->count_records('local_stackhinter_quiz', ['cmid' => 777]));
 
         // Updating an existing quiz must not create a second row.
-        quiz_settings::set_enabled(777, false);
+        quiz_settings::save(777, false);
         $this->assertFalse(quiz_settings::is_enabled(777));
         $this->assertEquals(1, $DB->count_records('local_stackhinter_quiz', ['cmid' => 777]));
 
-        quiz_settings::set_enabled(777, true);
+        quiz_settings::save(777, true);
         $this->assertTrue(quiz_settings::is_enabled(777));
         $this->assertEquals(1, $DB->count_records('local_stackhinter_quiz', ['cmid' => 777]));
+    }
+
+    /**
+     * Max hints per question persists, defaults to 3 when unset, and is clamped to at least 1.
+     *
+     * @return void
+     */
+    public function test_maxhints_round_trips(): void {
+        $this->resetAfterTest();
+        $this->assertEquals(3, quiz_settings::get_maxhints(555)); // Default when no row.
+        quiz_settings::save(555, true, 5);
+        $this->assertEquals(5, quiz_settings::get_maxhints(555));
+        quiz_settings::save(555, true, 0); // Clamped up to 1.
+        $this->assertEquals(1, quiz_settings::get_maxhints(555));
     }
 
     /**
@@ -72,7 +86,7 @@ final class quiz_settings_test extends \advanced_testcase {
      */
     public function test_delete_for_cmid(): void {
         $this->resetAfterTest();
-        quiz_settings::set_enabled(888, true);
+        quiz_settings::save(888, true);
         $this->assertTrue(quiz_settings::is_enabled(888));
 
         quiz_settings::delete_for_cmid(888);
@@ -92,7 +106,7 @@ final class quiz_settings_test extends \advanced_testcase {
         $quiz = $this->getDataGenerator()->create_module('quiz', ['course' => $course->id]);
         $cmid = (int) $quiz->cmid;
 
-        quiz_settings::set_enabled($cmid, true);
+        quiz_settings::save($cmid, true);
         $DB->insert_record('local_stackhinter_hints', (object) [
             'userid' => 1, 'cmid' => $cmid, 'attempt' => 1, 'question' => 'q', 'answer' => 'a',
             'feedback' => '', 'hint' => 'h', 'provider' => 'own:test', 'timecreated' => time(),

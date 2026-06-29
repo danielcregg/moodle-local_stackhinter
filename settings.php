@@ -90,12 +90,4 @@ if ($hassiteconfig) {
         get_string('apikey_desc', 'local_stackhinter'),
         ''
     ));
-
-    $settings->add(new admin_setting_configtext(
-        'local_stackhinter/maxhints',
-        get_string('maxhints', 'local_stackhinter'),
-        get_string('maxhints_desc', 'local_stackhinter'),
-        '3',
-        PARAM_INT
-    ));
 }

@@ -29,6 +29,19 @@
  * @return bool Always true on success.
  */
 function xmldb_local_stackhinter_upgrade($oldversion) {
-    // First public version installs everything from db/install.xml; no upgrade steps yet.
+    global $DB;
+
+    if ($oldversion < 2026062902) {
+        // "Max hints per question" moved from a site setting to the per-quiz settings form.
+        $dbman = $DB->get_manager();
+        $table = new xmldb_table('local_stackhinter_quiz');
+        $field = new xmldb_field('maxhints', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '3', 'enabled');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        unset_config('maxhints', 'local_stackhinter'); // The old site-level setting is now unused.
+        upgrade_plugin_savepoint(true, 2026062902, 'local', 'stackhinter');
+    }
+
     return true;
 }
