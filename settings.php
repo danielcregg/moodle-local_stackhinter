@@ -98,5 +98,4 @@ if ($hassiteconfig) {
         '3',
         PARAM_INT
     ));
-
 }
