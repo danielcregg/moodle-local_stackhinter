@@ -32,7 +32,7 @@ function xmldb_local_stackhinter_upgrade($oldversion) {
     global $DB;
 
     if ($oldversion < 2026062902) {
-        // "Max hints per question" moved from a site setting to the per-quiz settings form.
+        // Move "max hints per question" from a site setting to the per-quiz settings form.
         $dbman = $DB->get_manager();
         $table = new xmldb_table('local_stackhinter_quiz');
         $field = new xmldb_field('maxhints', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '3', 'enabled');
