@@ -55,8 +55,12 @@ function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) 
     $mform->addHelpButton('local_stackhinter_enabled', 'perquizenable', 'local_stackhinter');
     $mform->setDefault('local_stackhinter_enabled', 0); // Off by default (covers newly created quizzes).
 
-    $mform->addElement('select', 'local_stackhinter_maxhints', get_string('maxhints', 'local_stackhinter'),
-        array_combine(range(1, 10), range(1, 10)));
+    $mform->addElement(
+        'select',
+        'local_stackhinter_maxhints',
+        get_string('maxhints', 'local_stackhinter'),
+        array_combine(range(1, 10), range(1, 10))
+    );
     $mform->setDefault('local_stackhinter_maxhints', 3);
     $mform->addHelpButton('local_stackhinter_maxhints', 'maxhints', 'local_stackhinter');
     $mform->disabledIf('local_stackhinter_maxhints', 'local_stackhinter_enabled', 'notchecked');
