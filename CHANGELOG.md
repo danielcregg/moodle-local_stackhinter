@@ -28,7 +28,8 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   hinter), keeping the quiz form uncluttered.
 - **AWS Bedrock and OpenRouter** AI providers. Bedrock uses its OpenAI-compatible Chat Completions API
   authenticated with an Amazon Bedrock API key, with an added "AWS region" setting (its endpoint is
-  region-specific); every other provider still needs only a model and an API key.
+  region-specific, and shown only when Bedrock is the chosen provider); every other provider still needs
+  only a model and an API key.
 - **Navigate hints.** The hint panel keeps every hint generated for a question and shows prev/next
   controls (with a "Hint n of N" counter), so a student can review earlier hints and move forward again.
 

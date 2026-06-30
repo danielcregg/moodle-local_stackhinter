@@ -99,4 +99,7 @@ if ($hassiteconfig) {
         get_string('region_desc', 'local_stackhinter'),
         'us-east-1'
     ));
+
+    // Show the AWS region row only when the selected provider is AWS Bedrock (the only one that needs it).
+    $settings->hide_if('local_stackhinter/region', 'local_stackhinter/provider', 'neq', 'bedrock');
 }
