@@ -22,6 +22,8 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
 - A `local_stackhinter_quiz` table storing the per-course-module flag, with an upgrade step.
 - An event observer that removes a quiz's opt-in row and its hint log when the quiz is deleted, so no
   orphaned personal data remains once the module context is gone.
+- A short note on the per-quiz settings making clear they apply only to STACK questions (the section
+  shows on every quiz's settings form and is off by default).
 
 ### Changed
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets

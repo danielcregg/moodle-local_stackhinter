@@ -54,6 +54,7 @@ $string['ownheading_desc'] = 'Used when the AI backend is "This plugin\'s own pr
 $string['perquizenable'] = 'Enable STACK AI Hinter on this quiz';
 $string['perquizenable_help'] = 'When ticked, students see the AI hint button on this quiz\'s STACK questions. It is off by default — leave it off for graded tests and exams. This only has an effect if a site administrator has enabled STACK AI Hinter for the whole site.';
 $string['perquizheading'] = 'STACK AI Hinter';
+$string['perquizinfo'] = 'These settings apply only to STACK questions in this quiz — they have no effect on quizzes without STACK questions.';
 $string['pluginname'] = 'STACK AI Hinter';
 $string['policyaccept'] = 'Accept and continue';
 $string['policyintro'] = 'Hints on this site are generated through Moodle\'s AI. Please review and accept the AI usage policy to continue.';
