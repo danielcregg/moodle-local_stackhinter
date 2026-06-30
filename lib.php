@@ -45,10 +45,10 @@ function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) 
 
     $mform->addElement('header', 'local_stackhinter_header', get_string('perquizheading', 'local_stackhinter'));
     // This section shows on every quiz's settings form, so make clear it only affects STACK questions.
-    // Indented (ps-md-4) to line up with the form's field labels, in the normal (not muted) text colour.
+    // Indented via .stackhinter-note (styles.css) to line up with the form's field labels; normal text colour.
     $mform->addElement('html', html_writer::div(
         s(get_string('perquizinfo', 'local_stackhinter')),
-        'ps-md-4 mb-2'
+        'stackhinter-note mb-2'
     ));
     $mform->addElement(
         'advcheckbox',
