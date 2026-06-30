@@ -89,7 +89,7 @@ const attach = (config, que) => {
         return;
     }
     const strings = config.strings || {};
-    // attempt = escalation level reached; hints = every hint generated; viewing = index on show.
+    // State: attempt is the escalation level reached; hints are all generated; viewing is the index shown.
     const state = {attempt: 0, hints: [], viewing: 0, capped: false};
 
     const btn = document.createElement('button');

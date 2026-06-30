@@ -26,6 +26,11 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   shows on every quiz's settings form and is off by default).
 - The per-quiz settings section is collapsed by default (it auto-expands on quizzes that already use the
   hinter), keeping the quiz form uncluttered.
+- **AWS Bedrock and OpenRouter** AI providers. Bedrock uses its OpenAI-compatible Chat Completions API
+  authenticated with an Amazon Bedrock API key, with an added "AWS region" setting (its endpoint is
+  region-specific); every other provider still needs only a model and an API key.
+- **Navigate hints.** The hint panel keeps every hint generated for a question and shows prev/next
+  controls (with a "Hint n of N" counter), so a student can review earlier hints and move forward again.
 
 ### Changed
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets
@@ -39,8 +44,13 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   sourcemap), so it matches the `moodle-plugin-ci grunt` check exactly.
 - The site "Enable STACK AI Hinter" description now explains the two-layer model (the site enables the
   hinter; teachers choose per quiz).
+- The **Hint button now sits beside the STACK Check button** with the same size, shape and colour; the
+  hint panel appears on its own line below the question's controls.
+- Polished user-facing wording: plain punctuation throughout (no em dashes), a clearer and tidily
+  laid-out per-quiz note, and a shorter "hint limit reached" message.
 
 ### Removed
+- **DeepSeek** from the AI provider list.
 - The optional "Practise next" RL banner and its `/recommend` endpoint, settings (RL teaching-policy URL
   and token) and privacy disclosure. The plugin is now focused purely on Socratic hints; an adaptive
   "what to practise next" recommendation belongs in a more actionable placement and is planned separately.

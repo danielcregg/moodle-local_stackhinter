@@ -32,8 +32,8 @@ sequenceDiagram
   `qtype_stack` as a dependency.
 - An **AI backend**: either Moodle's built-in **core AI** (configure a provider under *Site
   administration → AI* — no separate key needed) **or** this plugin's own API key for one external
-  provider (OpenAI, Anthropic Claude, Google Gemini, Groq, DeepSeek, Mistral, Cerebras, or an
-  OpenAI-compatible gateway).
+  provider (OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, OpenRouter, Groq, Mistral, Cerebras,
+  or an OpenAI-compatible gateway). AWS Bedrock additionally takes an AWS region.
 
 ## Install
 
