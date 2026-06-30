@@ -62,6 +62,9 @@ class hook_callbacks {
                 'thinking'    => get_string('hintthinking', 'local_stackhinter'),
                 'done'        => get_string('hintsdone', 'local_stackhinter'),
                 'unavailable' => get_string('hintunavailable', 'local_stackhinter'),
+                'prev'        => get_string('hintprev', 'local_stackhinter'),
+                'next'        => get_string('hintnext', 'local_stackhinter'),
+                'counter'     => get_string('hintcounter', 'local_stackhinter'),
             ],
         ];
 

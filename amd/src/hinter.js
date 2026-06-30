@@ -89,7 +89,8 @@ const attach = (config, que) => {
         return;
     }
     const strings = config.strings || {};
-    const state = {attempt: 0};
+    // attempt = escalation level reached; hints = every hint generated; viewing = index on show.
+    const state = {attempt: 0, hints: [], viewing: 0, capped: false};
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -161,12 +162,78 @@ const attach = (config, que) => {
         panel.appendChild(accept);
     };
 
+    // Render the currently-viewed hint plus prev/next navigation through every hint generated so far.
+    const render = () => {
+        panel.textContent = '';
+        panel.classList.add('stackhinter-hint-show');
+        if (!state.hints.length) {
+            return;
+        }
+        const text = document.createElement('div');
+        text.className = 'stackhinter-hint-text';
+        text.textContent = '💡 ' + state.hints[state.viewing];
+        panel.appendChild(text);
+
+        if (state.hints.length > 1) {
+            const nav = document.createElement('div');
+            nav.className = 'stackhinter-hint-nav';
+            nav.style.marginTop = '6px';
+
+            const prev = document.createElement('button');
+            prev.type = 'button';
+            prev.className = 'btn btn-link btn-sm stackhinter-nav-prev';
+            prev.textContent = '◀';
+            prev.title = strings.prev || '';
+            prev.setAttribute('aria-label', strings.prev || '');
+            prev.disabled = state.viewing === 0;
+            prev.addEventListener('click', () => {
+                if (state.viewing > 0) {
+                    state.viewing -= 1;
+                    render();
+                }
+            });
+
+            const count = document.createElement('span');
+            count.className = 'stackhinter-hint-count';
+            count.textContent = ' ' + (strings.counter || '{n} / {total}')
+                .replace('{n}', String(state.viewing + 1))
+                .replace('{total}', String(state.hints.length)) + ' ';
+
+            const next = document.createElement('button');
+            next.type = 'button';
+            next.className = 'btn btn-link btn-sm stackhinter-nav-next';
+            next.textContent = '▶';
+            next.title = strings.next || '';
+            next.setAttribute('aria-label', strings.next || '');
+            next.disabled = state.viewing === state.hints.length - 1;
+            next.addEventListener('click', () => {
+                if (state.viewing < state.hints.length - 1) {
+                    state.viewing += 1;
+                    render();
+                }
+            });
+
+            nav.appendChild(prev);
+            nav.appendChild(count);
+            nav.appendChild(next);
+            panel.appendChild(nav);
+        }
+
+        if (state.capped) {
+            const done = document.createElement('div');
+            done.className = 'stackhinter-hint-done';
+            done.style.marginTop = '6px';
+            done.textContent = strings.done || '';
+            panel.appendChild(done);
+        }
+    };
+
     const postHint = () => {
         btn.disabled = true;
         panel.classList.add('stackhinter-hint-show');
         panel.textContent = strings.thinking || '';
         // Use the next escalation level for this request, but only commit it once a hint is actually
-        // returned — a policy prompt or a failure must not consume the student's hint quota.
+        // returned: a policy prompt or a failure must not consume the student's hint quota.
         const thisAttempt = state.attempt + 1;
         const ids = qubaSlot(que);
         const body = new URLSearchParams({
@@ -189,7 +256,10 @@ const attach = (config, que) => {
                     showPolicy(data);
                 } else if (data.hint) {
                     state.attempt = thisAttempt;
-                    panel.textContent = '💡 ' + data.hint;
+                    state.hints.push(data.hint);
+                    state.viewing = state.hints.length - 1;
+                    state.capped = false;
+                    render();
                 } else {
                     panel.textContent = data.error || strings.unavailable || '';
                 }
@@ -205,8 +275,9 @@ const attach = (config, que) => {
 
     btn.addEventListener('click', () => {
         if (config.maxhints && state.attempt >= config.maxhints) {
-            panel.classList.add('stackhinter-hint-show');
-            panel.textContent = strings.done || '';
+            // No more new hints; flag it so render() shows the limit note, but keep the hints navigable.
+            state.capped = true;
+            render();
             return;
         }
         postHint();
