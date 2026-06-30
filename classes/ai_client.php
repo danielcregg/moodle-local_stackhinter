@@ -50,13 +50,16 @@ class ai_client {
         "Rules:\n" .
         "- NEVER state the final answer or give a full worked solution. Lead the student to it.\n" .
         "- Reply with exactly ONE hint, 1-3 sentences, about the student's specific mistake.\n" .
+        "- Address the student directly as \"you\"; never talk about \"the student\" in the third person.\n" .
+        "- Output ONLY the hint itself: no labels or headings, do not restate the question, answer, " .
+        "feedback, diagnosis or attempt number, and do not show any reasoning or thinking.\n" .
         "- Escalate by attempt: 1 = a gentle conceptual nudge; 2 = point to the specific step or " .
         "error; 3+ = name the method/rule to apply (but still NOT the final value).\n" .
         "- Ground the hint in the student's actual answer and the grader feedback.\n" .
         "- You may also be given an authoritative CAS DIAGNOSIS of the student's answer (whether it is " .
         "equivalent but in the wrong form, off by a constant, or has a wrong term). Trust it over your " .
         "own algebra and use it to target your hint; do not quote it verbatim.\n" .
-        "- Be encouraging and concise. Plain text only - no markdown, no LaTeX delimiters.";
+        "- Be encouraging and concise. Plain text only: no markdown, asterisks, or LaTeX/backslash delimiters.";
 
     /**
      * Resolve which AI backend handles a request: 'core' (Moodle's AI subsystem) or 'own' (this
@@ -133,7 +136,7 @@ class ai_client {
             if ($text === null || trim($text) === '') {
                 throw new \moodle_exception('aifailed', 'local_stackhinter', '', 'core AI provider failed');
             }
-            return $text;
+            return self::nonempty(self::sanitize($text));
         }
 
         // This plugin's own provider path.
@@ -156,14 +159,18 @@ class ai_client {
 
         switch ($p['kind']) {
             case 'openai':
-                return self::call_openai($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_openai($endpoint, $key, $model, self::SYSTEM, $user);
+                break;
             case 'gemini':
-                return self::call_gemini($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_gemini($endpoint, $key, $model, self::SYSTEM, $user);
+                break;
             case 'anthropic':
-                return self::call_anthropic($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_anthropic($endpoint, $key, $model, self::SYSTEM, $user);
+                break;
             default:
                 throw new \moodle_exception('noprovider', 'local_stackhinter');
         }
+        return self::nonempty(self::sanitize($text));
     }
 
     /**
@@ -312,6 +319,40 @@ class ai_client {
             $text .= $b['text'] ?? '';
         }
         return self::nonempty(trim($text));
+    }
+
+    /**
+     * Clean artifacts smaller models emit despite the plain-text rule: reasoning/think blocks, LaTeX and
+     * markdown delimiters, leading list markers, and any echoed prompt labels. Defence in depth — the
+     * system prompt already forbids these, but small or self-hosted models do not always comply, so the
+     * hint is cleaned before it is stored or shown.
+     *
+     * @param string $text The raw hint text from the AI.
+     * @return string The cleaned hint.
+     */
+    public static function sanitize(string $text): string {
+        // Reasoning/thinking blocks (e.g. Qwen3-family) and any stray reasoning tags.
+        $text = preg_replace('/<think\b[^>]*>.*?<\/think>/is', '', $text);
+        $text = preg_replace('/<\/?(think|reasoning)\b[^>]*>/i', '', $text);
+        // LaTeX: \frac{a}{b} -> (a)/(b), then drop \( \) \[ \] \, delimiters.
+        $text = preg_replace('/\\\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/', '($1)/($2)', $text);
+        $text = preg_replace('/\\\\[()\[\],]/', '', $text);
+        // Markdown emphasis and inline maths markers.
+        $text = preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);
+        $text = preg_replace('/\*([^*]+)\*/', '$1', $text);
+        $text = str_replace('$', '', $text);
+        // Echoed prompt labels at the start of a line, and a leading "1." list marker.
+        $text = preg_replace(
+            '/^\s*(QUESTION|STUDENT\'?S?(?:\s+ANSWER|\s+RESPONSE)?|GRADER FEEDBACK|CAS DIAGNOSIS|' .
+            'ATTEMPT NUMBER|HINT|SOCRATIC HINT)\s*:.*$/im',
+            '',
+            $text
+        );
+        $text = preg_replace('/^\s*\d+\.\s+/', '', $text);
+        // Collapse whitespace left behind.
+        $text = preg_replace('/[ \t]{2,}/', ' ', $text);
+        $text = preg_replace('/\n{2,}/', "\n", $text);
+        return trim($text);
     }
 
     /**

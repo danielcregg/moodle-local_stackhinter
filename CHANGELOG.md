@@ -37,6 +37,12 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   and the README has a matching "Quick start" section.
 
 ### Changed
+- **Hint output is now sanitised** server-side before it is stored or shown: reasoning/`<think>` blocks
+  (e.g. from Qwen3-family models), LaTeX and markdown delimiters, echoed prompt labels and leading list
+  markers are stripped. The system prompt now also tells the model to address the student directly and to
+  output only the hint. Together these remove the formatting artefacts and prompt-parroting that smaller or
+  self-hosted models can otherwise produce. (Backed by an on-device model evaluation across the latest
+  small web-runnable models; gemma-2-2b-class models give the best small-model hints.)
 - The default **AI provider is now OpenRouter** (which offers free models) rather than OpenAI; existing
   sites keep whatever provider they already configured.
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets

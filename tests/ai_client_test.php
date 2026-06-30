@@ -136,4 +136,35 @@ final class ai_client_test extends \advanced_testcase {
         set_config('aibackend', 'core', 'local_stackhinter');
         $this->assertSame('core_ai', ai_client::backend_label(null));
     }
+
+    /**
+     * The output sanitiser strips reasoning blocks, LaTeX and markdown delimiters, echoed prompt
+     * labels and leading list markers, while leaving an already-clean hint untouched.
+     *
+     * @return void
+     */
+    public function test_sanitize(): void {
+        // A clean hint is returned unchanged.
+        $this->assertSame(
+            'Think about the power rule for differentiation.',
+            ai_client::sanitize('Think about the power rule for differentiation.')
+        );
+        // Reasoning/think blocks are removed.
+        $this->assertSame(
+            'Try factoring the quadratic.',
+            ai_client::sanitize("<think>They wrote x=2, missing a root.</think>Try factoring the quadratic.")
+        );
+        // LaTeX delimiters and a simple \frac are cleaned to plain text.
+        $this->assertSame(
+            'You should get (1)/(2) of that.',
+            ai_client::sanitize('You should get \\(\\frac{1}{2}\\) of that.')
+        );
+        // Markdown emphasis is stripped.
+        $this->assertSame('Use the FOIL method.', ai_client::sanitize('Use the **FOIL** method.'));
+        // Echoed prompt labels and a leading list marker are removed.
+        $this->assertSame(
+            'Re-check your differentiation.',
+            ai_client::sanitize("STUDENT'S ANSWER: x^2\n1. Re-check your differentiation.")
+        );
+    }
 }
