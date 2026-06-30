@@ -66,6 +66,13 @@ function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) 
     $mform->setDefault('local_stackhinter_maxhints', 3);
     $mform->addHelpButton('local_stackhinter_maxhints', 'maxhints', 'local_stackhinter');
     $mform->disabledIf('local_stackhinter_maxhints', 'local_stackhinter_enabled', 'notchecked');
+
+    // Collapsed by default to keep the quiz form tidy; expanded on quizzes that already use the hinter.
+    $cmid = (int) ($current->coursemodule ?? 0);
+    $mform->setExpanded(
+        'local_stackhinter_header',
+        $cmid > 0 && \local_stackhinter\quiz_settings::is_enabled($cmid)
+    );
 }
 
 /**

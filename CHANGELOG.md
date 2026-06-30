@@ -24,6 +24,8 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   orphaned personal data remains once the module context is gone.
 - A short note on the per-quiz settings making clear they apply only to STACK questions (the section
   shows on every quiz's settings form and is off by default).
+- The per-quiz settings section is collapsed by default (it auto-expands on quizzes that already use the
+  hinter), keeping the quiz form uncluttered.
 
 ### Changed
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets
