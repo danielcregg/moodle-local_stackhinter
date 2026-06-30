@@ -41,9 +41,9 @@ class ai_client {
         'gemini'   => ['kind' => 'gemini', 'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/'],
     ];
 
-    /** @var string The Socratic system prompt (mirrors the decoupled web tutor). */
+    /** @var string The Socratic system prompt that instructs the AI to give one escalating hint. */
     const SYSTEM =
-        "You are a patient Socratic mathematics tutor embedded in a STACK quiz.\n" .
+        "You are a patient, Socratic mathematics coach embedded in a STACK quiz.\n" .
         "Rules:\n" .
         "- NEVER state the final answer or give a full worked solution. Lead the student to it.\n" .
         "- Reply with exactly ONE hint, 1-3 sentences, about the student's specific mistake.\n" .
@@ -212,7 +212,7 @@ class ai_client {
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
-        curl_close($ch);
+        // No curl_close(): it is deprecated in PHP 8+ (a no-op) — the handle is freed when $ch goes out of scope.
         if ($resp === false) {
             throw new \moodle_exception('aifailed', 'local_stackhinter', '', $err);
         }

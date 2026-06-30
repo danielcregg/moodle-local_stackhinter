@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="local/stackhinter/db" VERSION="2026062900" COMMENT="STACK AI Hinter"
+<XMLDB PATH="local/stackhinter/db" VERSION="2026063000" COMMENT="STACK AI Hinter"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
   <TABLES>
-    <TABLE NAME="local_stackhinter_hints" COMMENT="Logged hint tutor hints (interaction data for teaching analytics)">
+    <TABLE NAME="local_stackhinter_hints" COMMENT="Logged hints shown to students (interaction data for teaching analytics)">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>

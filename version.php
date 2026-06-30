@@ -17,7 +17,7 @@
 /**
  * Version metadata for STACK AI Hinter local plugin.
  *
- * Injects a Socratic hint tutor into STACK quiz-attempt pages. The AI key lives server-side; the
+ * Injects a Socratic hint button into STACK quiz-attempt pages. The AI key lives server-side; the
  * browser only calls this plugin's own endpoint.
  *
  * @package    local_stackhinter
@@ -28,11 +28,11 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component    = 'local_stackhinter';
-$plugin->version      = 2026062903;
+$plugin->version      = 2026063000;
 $plugin->requires     = 2024100700;             // Moodle 4.5 (LTS) — uses the Hooks API.
 $plugin->supported    = [405, 405];             // Developed and tested on Moodle 4.5 LTS.
 $plugin->maturity     = MATURITY_BETA;
 $plugin->release      = '1.2.0-beta';
 $plugin->dependencies = [
-    'qtype_stack' => ANY_VERSION, // Tutors STACK questions specifically.
+    'qtype_stack' => ANY_VERSION, // Hints are given on STACK questions specifically.
 ];

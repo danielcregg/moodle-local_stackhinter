@@ -27,6 +27,6 @@ defined('MOODLE_INTERNAL') || die();
 $callbacks = [
     [
         'hook'     => \core\hook\output\before_standard_footer_html_generation::class,
-        'callback' => [\local_stackhinter\hook_callbacks::class, 'inject_tutor'],
+        'callback' => [\local_stackhinter\hook_callbacks::class, 'inject_hinter'],
     ],
 ];

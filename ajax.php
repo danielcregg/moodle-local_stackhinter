@@ -44,14 +44,14 @@ global $DB, $USER;
 header('Content-Type: application/json; charset=utf-8');
 
 if (!get_config('local_stackhinter', 'enabled')) {
-    echo json_encode(['error' => get_string('tutortemporary', 'local_stackhinter')]);
+    echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
     die();
 }
 
-// Per-quiz opt-in: refuse if this quiz has not enabled the tutor. This defends the endpoint itself,
+// Per-quiz opt-in: refuse if this quiz has not enabled the hinter. This defends the endpoint itself,
 // not just the JS injection — a crafted POST with a valid sesskey and cmid must not bypass the choice.
 if (!\local_stackhinter\quiz_settings::is_enabled($cmid)) {
-    echo json_encode(['error' => get_string('tutortemporary', 'local_stackhinter')]);
+    echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
     die();
 }
 
@@ -76,7 +76,7 @@ $slot     = optional_param('slot', 0, PARAM_INT);
 // Bind the hint to a real STACK attempt the user owns in THIS quiz, so the endpoint cannot be used as a
 // free-form AI proxy (a valid sesskey on an opted-in quiz is not sufficient on its own).
 if (!\local_stackhinter\stack_grounding::owns_attempt($cm, (int) $USER->id, $qubaid, $slot)) {
-    echo json_encode(['error' => get_string('tutortemporary', 'local_stackhinter')]);
+    echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
     die();
 }
 
@@ -118,9 +118,9 @@ try {
         die();
     }
     debugging('local_stackhinter hint failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-    echo json_encode(['error' => get_string('tutortemporary', 'local_stackhinter')]);
+    echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
 } catch (\Throwable $e) {
     // Log the detail server-side; return a generic message (no upstream/provider leak).
     debugging('local_stackhinter hint failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
-    echo json_encode(['error' => get_string('tutortemporary', 'local_stackhinter')]);
+    echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
 }

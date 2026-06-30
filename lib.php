@@ -18,7 +18,7 @@
  * Library callbacks for local_stackhinter.
  *
  * Adds per-quiz STACK AI Hinter settings (enable checkbox + max hints per question) to the quiz form, so a
- * teacher turns the tutor on only for the quizzes they choose. The hint button therefore never appears on a
+ * teacher turns the hinter on only for the quizzes they choose. The hint button therefore never appears on a
  * quiz nobody opted in — including graded exams. The field is shown only when an administrator has
  * enabled the plugin site-wide (no dead control), and only on quiz modules.
  *
@@ -37,10 +37,10 @@
 function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) {
     $current = $formwrapper->get_current();
     if (empty($current->modulename) || $current->modulename !== 'quiz') {
-        return; // Only quizzes carry STACK questions the tutor coaches.
+        return; // Only quizzes carry the STACK questions the hinter works on.
     }
     if (!get_config('local_stackhinter', 'enabled')) {
-        return; // Only offer the option where it can take effect (the site must enable the tutor first).
+        return; // Only offer the option where it can take effect (the site must enable the hinter first).
     }
 
     $mform->addElement('header', 'local_stackhinter_header', get_string('perquizheading', 'local_stackhinter'));

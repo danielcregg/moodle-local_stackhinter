@@ -101,4 +101,39 @@ final class ai_client_test extends \advanced_testcase {
             $this->assertSame('noprovider', $e->errorcode);
         }
     }
+
+    /**
+     * The AI backend resolves to the administrator's explicit choice; "auto" with no request context
+     * falls back to this plugin's own provider (core AI needs a real context to be selectable).
+     *
+     * @return void
+     */
+    public function test_resolve_backend(): void {
+        $this->resetAfterTest();
+
+        set_config('aibackend', 'own', 'local_stackhinter');
+        $this->assertSame('own', ai_client::resolve_backend(null));
+
+        set_config('aibackend', 'core', 'local_stackhinter');
+        $this->assertSame('core', ai_client::resolve_backend(null));
+
+        set_config('aibackend', 'auto', 'local_stackhinter');
+        $this->assertSame('own', ai_client::resolve_backend(null));
+    }
+
+    /**
+     * The backend label recorded against each hint names either the core subsystem or the own provider.
+     *
+     * @return void
+     */
+    public function test_backend_label(): void {
+        $this->resetAfterTest();
+
+        set_config('aibackend', 'own', 'local_stackhinter');
+        set_config('provider', 'openai', 'local_stackhinter');
+        $this->assertSame('own:openai', ai_client::backend_label(null));
+
+        set_config('aibackend', 'core', 'local_stackhinter');
+        $this->assertSame('core_ai', ai_client::backend_label(null));
+    }
 }

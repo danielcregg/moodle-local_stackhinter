@@ -84,12 +84,8 @@ jobs:
         if: ${{ always() }}
         run: moodle-plugin-ci mustache
 
-      # The committed amd/build/tutor.min.js is hand-verified (node --check) and behaviourally
-      # equal to amd/src. Run `grunt amd` from a Moodle checkout to make it byte-identical to the
-      # toolchain output, then remove continue-on-error to gate strictly.
       - name: Grunt
         if: ${{ always() }}
-        continue-on-error: true
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
       - name: PHPUnit tests

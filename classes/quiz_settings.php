@@ -27,13 +27,13 @@ namespace local_stackhinter;
 /**
  * Reads and writes the per-quiz (per course-module) opt-in flag in {local_stackhinter_quiz}.
  *
- * The safe default is OFF: a quiz with no row is treated as not opted in, so the tutor never appears on
+ * The safe default is OFF: a quiz with no row is treated as not opted in, so the hint button never appears on
  * a quiz a teacher has not explicitly enabled. This is the single source of truth checked by the JS
  * injection (hook_callbacks) and by the hint endpoint (ajax.php).
  */
 class quiz_settings {
     /**
-     * Whether the tutor is enabled for a given quiz course-module.
+     * Whether the hinter is enabled for a given quiz course-module.
      *
      * @param int $cmid The quiz course-module id.
      * @return bool True only if an explicit enabled row exists.
@@ -65,7 +65,7 @@ class quiz_settings {
      * Save (insert or update) the per-quiz settings: opt-in flag + max hints per question.
      *
      * @param int $cmid The quiz course-module id.
-     * @param bool $enabled Whether the tutor is enabled for this quiz.
+     * @param bool $enabled Whether the hinter is enabled for this quiz.
      * @param int $maxhints Max escalating hints per question (clamped to 1..50).
      * @return void
      */

@@ -25,16 +25,16 @@
 namespace local_stackhinter;
 
 /**
- * Injects the tutor AMD module into quiz-attempt pages via the footer hook.
+ * Injects the hinter AMD module into quiz-attempt pages via the footer hook.
  */
 class hook_callbacks {
     /**
-     * Load the tutor JavaScript on STACK quiz-attempt pages.
+     * Load the hinter JavaScript on STACK quiz-attempt pages.
      *
      * @param \core\hook\output\before_standard_footer_html_generation $hook The footer hook.
      * @return void
      */
-    public static function inject_tutor(\core\hook\output\before_standard_footer_html_generation $hook): void {
+    public static function inject_hinter(\core\hook\output\before_standard_footer_html_generation $hook): void {
         global $PAGE;
 
         if (!get_config('local_stackhinter', 'enabled')) {
@@ -45,7 +45,7 @@ class hook_callbacks {
             return;
         }
 
-        // Per-quiz opt-in: the tutor appears only on quizzes a teacher has explicitly enabled (off by
+        // Per-quiz opt-in: the hint button appears only on quizzes a teacher has explicitly enabled (off by
         // default), so it never loads on a quiz nobody opted in — including graded exams.
         $cmid = isset($PAGE->cm->id) ? (int) $PAGE->cm->id : 0;
         if (!quiz_settings::is_enabled($cmid)) {
@@ -61,10 +61,10 @@ class hook_callbacks {
             'strings' => [
                 'thinking'    => get_string('hintthinking', 'local_stackhinter'),
                 'done'        => get_string('hintsdone', 'local_stackhinter'),
-                'unavailable' => get_string('tutorunavailable', 'local_stackhinter'),
+                'unavailable' => get_string('hintunavailable', 'local_stackhinter'),
             ],
         ];
 
-        $PAGE->requires->js_call_amd('local_stackhinter/tutor', 'init', [$config]);
+        $PAGE->requires->js_call_amd('local_stackhinter/hinter', 'init', [$config]);
     }
 }

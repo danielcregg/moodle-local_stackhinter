@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Thin adapter over Moodle's core AI subsystem (\core_ai) so the tutor can reuse a site's already
+ * Thin adapter over Moodle's core AI subsystem (\core_ai) so the hinter can reuse a site's already
  * configured AI provider instead of needing its own API key.
  *
  * @package    local_stackhinter
@@ -93,7 +93,7 @@ class core_ai {
      * The site's AI policy text as plain text (for informed consent), or '' if unavailable.
      *
      * Moodle 4.5 stores the policy body in the core_ai `userpolicy` language string (HTML); an admin may
-     * override it via the core_ai `policy` config. We return plain text because the tutor renders it with
+     * override it via the core_ai `policy` config. We return plain text because the hinter renders it with
      * textContent (never innerHTML).
      *
      * @return string The plain-text policy, or ''.

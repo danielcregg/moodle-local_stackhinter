@@ -1,6 +1,6 @@
 @local @local_stackhinter
 Feature: STACK AI Hinter administration settings
-  In order to enable the Socratic hint tutor
+  In order to enable the Socratic hint button
   As an administrator
   I need to reach its configuration page
 

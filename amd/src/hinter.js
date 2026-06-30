@@ -18,7 +18,7 @@
  *
  * The AI key stays server-side; this module only calls the plugin's own endpoint.
  *
- * @module     local_stackhinter/tutor
+ * @module     local_stackhinter/hinter
  * @copyright  2026 Daniel Cregg
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -80,7 +80,7 @@ const qubaSlot = (que) => {
 /**
  * Attach a hint button and panel to one STACK question.
  *
- * @param {object} config The tutor configuration passed from PHP.
+ * @param {object} config The hinter configuration passed from PHP.
  * @param {HTMLElement} que The .que.stack element.
  * @return {void}
  */
@@ -204,9 +204,9 @@ const attach = (config, que) => {
 };
 
 /**
- * Entry point: wire the tutor into the current quiz-attempt page.
+ * Entry point: wire the hinter into the current quiz-attempt page.
  *
- * @param {object} config The tutor configuration passed from PHP.
+ * @param {object} config The hinter configuration passed from PHP.
  * @return {void}
  */
 export const init = (config) => {
