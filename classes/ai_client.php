@@ -31,14 +31,17 @@ namespace local_stackhinter;
 class ai_client {
     /** @var array OpenAI-compatible / gemini / anthropic endpoints, keyed by provider id. */
     const PROVIDERS = [
-        'openai'   => ['kind' => 'openai', 'endpoint' => 'https://api.openai.com/v1/chat/completions'],
-        'groq'     => ['kind' => 'openai', 'endpoint' => 'https://api.groq.com/openai/v1/chat/completions'],
-        'deepseek' => ['kind' => 'openai', 'endpoint' => 'https://api.deepseek.com/chat/completions'],
-        'mistral'  => ['kind' => 'openai', 'endpoint' => 'https://api.mistral.ai/v1/chat/completions'],
+        'openai' => ['kind' => 'openai', 'endpoint' => 'https://api.openai.com/v1/chat/completions'],
+        'groq' => ['kind' => 'openai', 'endpoint' => 'https://api.groq.com/openai/v1/chat/completions'],
+        'mistral' => ['kind' => 'openai', 'endpoint' => 'https://api.mistral.ai/v1/chat/completions'],
         'cerebras' => ['kind' => 'openai', 'endpoint' => 'https://api.cerebras.ai/v1/chat/completions'],
-        'zenmux'   => ['kind' => 'openai', 'endpoint' => 'https://zenmux.ai/api/v1/chat/completions'],
-        'claude'   => ['kind' => 'anthropic', 'endpoint' => 'https://api.anthropic.com/v1/messages'],
-        'gemini'   => ['kind' => 'gemini', 'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/'],
+        'zenmux' => ['kind' => 'openai', 'endpoint' => 'https://zenmux.ai/api/v1/chat/completions'],
+        'openrouter' => ['kind' => 'openai', 'endpoint' => 'https://openrouter.ai/api/v1/chat/completions'],
+        // AWS Bedrock now exposes an OpenAI-compatible API; the key is an Amazon Bedrock API key, and %s
+        // is the AWS region (from the region setting), substituted in before the request.
+        'bedrock' => ['kind' => 'openai', 'endpoint' => 'https://bedrock-runtime.%s.amazonaws.com/openai/v1/chat/completions'],
+        'claude' => ['kind' => 'anthropic', 'endpoint' => 'https://api.anthropic.com/v1/messages'],
+        'gemini' => ['kind' => 'gemini', 'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/'],
     ];
 
     /** @var string The Socratic system prompt that instructs the AI to give one escalating hint. */
@@ -147,17 +150,30 @@ class ai_client {
             throw new \moodle_exception('nokey', 'local_stackhinter');
         }
         $p = self::PROVIDERS[$providerid];
+        // AWS Bedrock's endpoint is region-specific; fill %s from the region setting. Other providers
+        // have no placeholder, so this leaves their endpoint unchanged.
+        $endpoint = str_replace('%s', self::region(), $p['endpoint']);
 
         switch ($p['kind']) {
             case 'openai':
-                return self::call_openai($p['endpoint'], $key, $model, self::SYSTEM, $user);
+                return self::call_openai($endpoint, $key, $model, self::SYSTEM, $user);
             case 'gemini':
-                return self::call_gemini($p['endpoint'], $key, $model, self::SYSTEM, $user);
+                return self::call_gemini($endpoint, $key, $model, self::SYSTEM, $user);
             case 'anthropic':
-                return self::call_anthropic($p['endpoint'], $key, $model, self::SYSTEM, $user);
+                return self::call_anthropic($endpoint, $key, $model, self::SYSTEM, $user);
             default:
                 throw new \moodle_exception('noprovider', 'local_stackhinter');
         }
+    }
+
+    /**
+     * The configured AWS region for the Bedrock provider (defaults to us-east-1).
+     *
+     * @return string The AWS region, e.g. 'us-east-1'.
+     */
+    private static function region(): string {
+        $region = trim((string) get_config('local_stackhinter', 'region'));
+        return $region !== '' ? $region : 'us-east-1';
     }
 
     /**

@@ -75,3 +75,5 @@ $string['privacy:metadata:provider:feedback'] = 'The grader feedback for the stu
 $string['privacy:metadata:provider:question'] = 'The question text the student is working on.';
 $string['provider'] = 'AI provider';
 $string['provider_desc'] = 'Which external AI service generates the hints. You must also set a model and API key.';
+$string['region'] = 'AWS region (Bedrock)';
+$string['region_desc'] = 'The AWS region for the AWS Bedrock provider, for example us-east-1 or eu-west-1. Other providers ignore this. Bedrock uses an OpenAI-compatible endpoint, so its API key is an Amazon Bedrock API key and the model is a Bedrock model id such as openai.gpt-oss-20b-1:0 or us.anthropic.claude-sonnet-4-6.';

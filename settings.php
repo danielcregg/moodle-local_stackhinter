@@ -66,14 +66,15 @@ if ($hassiteconfig) {
         get_string('provider_desc', 'local_stackhinter'),
         'openai',
         [
-            'openai'   => 'OpenAI',
-            'claude'   => 'Anthropic Claude',
-            'gemini'   => 'Google Gemini',
-            'groq'     => 'Groq',
-            'deepseek' => 'DeepSeek',
-            'mistral'  => 'Mistral',
-            'cerebras' => 'Cerebras',
-            'zenmux'   => 'ZenMux (OpenAI-compatible gateway)',
+            'openai'     => 'OpenAI',
+            'claude'     => 'Anthropic Claude',
+            'gemini'     => 'Google Gemini',
+            'bedrock'    => 'AWS Bedrock',
+            'openrouter' => 'OpenRouter',
+            'groq'       => 'Groq',
+            'mistral'    => 'Mistral',
+            'cerebras'   => 'Cerebras',
+            'zenmux'     => 'ZenMux (OpenAI-compatible gateway)',
         ]
     ));
 
@@ -89,5 +90,13 @@ if ($hassiteconfig) {
         get_string('apikey', 'local_stackhinter'),
         get_string('apikey_desc', 'local_stackhinter'),
         ''
+    ));
+
+    // Only the AWS Bedrock provider uses this; its endpoint is region-specific.
+    $settings->add(new admin_setting_configtext(
+        'local_stackhinter/region',
+        get_string('region', 'local_stackhinter'),
+        get_string('region_desc', 'local_stackhinter'),
+        'us-east-1'
     ));
 }
