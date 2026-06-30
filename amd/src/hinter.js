@@ -85,27 +85,37 @@ const qubaSlot = (que) => {
  * @return {void}
  */
 const attach = (config, que) => {
-    if (que.querySelector('.stackhinter-box')) {
+    if (que.querySelector('.stackhinter-btn')) {
         return;
     }
     const strings = config.strings || {};
     const state = {attempt: 0};
 
-    const box = document.createElement('div');
-    box.className = 'stackhinter-box';
-
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'btn btn-secondary btn-sm stackhinter-btn';
+    // Match the STACK "Check" button (btn btn-secondary, default size) so the two sit side by side.
+    btn.className = 'btn btn-secondary stackhinter-btn';
     btn.textContent = '💡 ' + (config.label || 'Hint');
 
     const panel = document.createElement('div');
     panel.className = 'stackhinter-hint';
 
-    box.appendChild(btn);
-    box.appendChild(panel);
-    const anchor = que.querySelector('.ablock') || que.querySelector('.formulation') || que;
-    anchor.appendChild(box);
+    // Place the Hint button immediately to the right of the question's Check/submit button, with the
+    // hint panel on its own line below the controls. Fall back to a standalone box if there is no Check.
+    const check = que.querySelector('.im-controls [type="submit"]') || que.querySelector('[type="submit"].submit');
+    if (check) {
+        btn.style.marginLeft = '0.5rem';
+        check.insertAdjacentElement('afterend', btn);
+        const controls = check.closest('.im-controls') || check.parentNode;
+        controls.insertAdjacentElement('afterend', panel);
+    } else {
+        const box = document.createElement('div');
+        box.className = 'stackhinter-box';
+        box.appendChild(btn);
+        box.appendChild(panel);
+        const anchor = que.querySelector('.ablock') || que.querySelector('.formulation') || que;
+        anchor.appendChild(box);
+    }
 
     // Show the site's AI policy with an Accept button; on accept, record it then retry the hint.
     // Built with text nodes only (never innerHTML) so a hostile policy string cannot inject markup.
