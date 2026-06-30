@@ -45,7 +45,11 @@ function local_stackhinter_coursemodule_standard_elements($formwrapper, $mform) 
 
     $mform->addElement('header', 'local_stackhinter_header', get_string('perquizheading', 'local_stackhinter'));
     // This section shows on every quiz's settings form, so make clear it only affects STACK questions.
-    $mform->addElement('static', 'local_stackhinter_info', '', get_string('perquizinfo', 'local_stackhinter'));
+    // A full-width note (not a labelled form row) so it reads as a section description, left-aligned.
+    $mform->addElement('html', html_writer::div(
+        s(get_string('perquizinfo', 'local_stackhinter')),
+        'text-muted mb-2'
+    ));
     $mform->addElement(
         'advcheckbox',
         'local_stackhinter_enabled',

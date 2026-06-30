@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['aibackend'] = 'AI backend';
-$string['aibackend_auto'] = 'Auto — Moodle\'s built-in AI if a provider is configured, otherwise this plugin\'s own provider';
+$string['aibackend_auto'] = 'Auto: Moodle\'s built-in AI if a provider is configured, otherwise this plugin\'s own provider';
 $string['aibackend_core'] = 'Moodle\'s built-in AI (reuses the site\'s configured provider and key)';
 $string['aibackend_desc'] = 'Where hints are generated. "Moodle\'s built-in AI" reuses a provider configured under Site administration > AI, so no separate key is needed and Moodle\'s AI policy and logging apply. "This plugin\'s own provider" uses the provider, model and key set below. "Auto" prefers Moodle\'s AI when a core provider is available, otherwise uses this plugin\'s own provider.';
 $string['aibackend_own'] = 'This plugin\'s own provider and key (set below)';
@@ -35,9 +35,9 @@ $string['aipolicyrequired'] = 'Please accept this site\'s AI usage policy to use
 $string['apikey'] = 'AI API key';
 $string['apikey_desc'] = 'Stored server-side and never sent to the browser; the plugin calls the provider from the server.';
 $string['enabled'] = 'Enable STACK AI Hinter';
-$string['enabled_desc'] = 'Make STACK AI Hinter available on this site. When on, teachers can switch the hint button on per quiz (off by default) in each quiz\'s settings — so it never appears on a quiz nobody opted in, including exams. Stays off until you also configure an AI backend (a provider, model and API key below, or Moodle\'s built-in AI).';
+$string['enabled_desc'] = 'Make STACK AI Hinter available on this site. When on, teachers can switch the hint button on per quiz (off by default) in each quiz\'s settings, so it never appears on a quiz nobody opted in, including exams. Stays off until you also configure an AI backend (a provider, model and API key below, or Moodle\'s built-in AI).';
 $string['hintbutton'] = 'Hint';
-$string['hintlimitreached'] = 'You have reached the hint limit for this quiz. Keep going — you can do it!';
+$string['hintlimitreached'] = 'You have reached the hint limit for this quiz. Keep going, you can do it!';
 $string['hintsdone'] = 'You have used all available hints for this question. Give it another try!';
 $string['hinttemporary'] = 'Hints are temporarily unavailable. Please try again in a moment.';
 $string['hintthinking'] = 'Generating a hint…';
@@ -52,9 +52,9 @@ $string['noprovider'] = 'No valid AI provider is configured for STACK AI Hinter.
 $string['ownheading'] = 'This plugin\'s own AI provider';
 $string['ownheading_desc'] = 'Used when the AI backend is "This plugin\'s own provider", or "Auto" with no core AI provider configured. Ignored when Moodle\'s built-in AI is used.';
 $string['perquizenable'] = 'Enable STACK AI Hinter on this quiz';
-$string['perquizenable_help'] = 'When ticked, students see the AI hint button on this quiz\'s STACK questions. It is off by default — leave it off for graded tests and exams. This only has an effect if a site administrator has enabled STACK AI Hinter for the whole site.';
+$string['perquizenable_help'] = 'When ticked, students see the AI hint button on this quiz\'s STACK questions. It is off by default. Leave it off for graded tests and exams. This only has an effect if a site administrator has enabled STACK AI Hinter for the whole site.';
 $string['perquizheading'] = 'STACK AI Hinter';
-$string['perquizinfo'] = 'These settings apply only to STACK questions in this quiz — they have no effect on quizzes without STACK questions.';
+$string['perquizinfo'] = 'These settings apply only to STACK questions in this quiz. They have no effect on quizzes without STACK questions.';
 $string['pluginname'] = 'STACK AI Hinter';
 $string['policyaccept'] = 'Accept and continue';
 $string['policyintro'] = 'Hints on this site are generated through Moodle\'s AI. Please review and accept the AI usage policy to continue.';
