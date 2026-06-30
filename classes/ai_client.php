@@ -334,10 +334,10 @@ class ai_client {
         // Reasoning/thinking blocks (e.g. Qwen3-family) and any stray reasoning tags.
         $text = preg_replace('/<think\b[^>]*>.*?<\/think>/is', '', $text);
         $text = preg_replace('/<\/?(think|reasoning)\b[^>]*>/i', '', $text);
-        // LaTeX: \frac{a}{b} -> (a)/(b), then drop \( \) \[ \] \, delimiters.
+        // Convert a simple LaTeX fraction into a plain quotient, then remove the inline maths delimiters.
         $text = preg_replace('/\\\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/', '($1)/($2)', $text);
         $text = preg_replace('/\\\\[()\[\],]/', '', $text);
-        // LaTeX commands such as \sin, \cos, \times: drop the backslash, keep the readable word.
+        // Remove the leading backslash from any remaining LaTeX command, keeping the readable word.
         $text = preg_replace('/\\\\([a-zA-Z]+)/', '$1', $text);
         // Markdown emphasis and inline maths markers.
         $text = preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);
