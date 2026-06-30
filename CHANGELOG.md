@@ -32,8 +32,13 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
   only a model and an API key.
 - **Navigate hints.** The hint panel keeps every hint generated for a question and shows prev/next
   controls (with a "Hint n of N" counter), so a student can review earlier hints and move forward again.
+- **Quick-start guidance for a free setup.** The own-provider settings now describe a roughly 2-minute,
+  no-cost path (a free OpenRouter model ending in `:free`, or Google Gemini's free tier) with direct links,
+  and the README has a matching "Quick start" section.
 
 ### Changed
+- The default **AI provider is now OpenRouter** (which offers free models) rather than OpenAI; existing
+  sites keep whatever provider they already configured.
 - **Max hints per question** moved from a site setting to the **per-quiz** settings form, so each quiz sets
   its own hint allowance (a 1–10 dropdown, default 3). An upgrade adds the column and removes the old site
   setting.

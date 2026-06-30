@@ -44,6 +44,19 @@ Site administration → Plugins → Install plugins → search for *STACK AI Hin
 Copy this directory to `<moodleroot>/local/stackhinter` (the folder **must** be named `stackhinter`), then
 visit *Site administration → Notifications*, or run `php admin/cli/upgrade.php --non-interactive`.
 
+## Quick start: free AI in about 2 minutes
+
+The plugin ships **inert** (disabled, with no key). Two no-cost ways to make it work:
+
+**Option A: a free API key (fastest for a single site).**
+1. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys), or use Google's [Gemini free tier](https://aistudio.google.com/apikey).
+2. In *Site administration → Plugins → Local plugins → STACK AI Hinter*, set **AI provider** to **OpenRouter**, paste the key into **AI API key**, and set **Model** to a current model id ending in `:free` from the [free models list](https://openrouter.ai/models?max_price=0) (for example `meta-llama/llama-3.3-70b-instruct:free`). With Gemini instead, use provider **Google Gemini** and model `gemini-2.5-flash`.
+3. Tick **Enable STACK AI Hinter**, then turn hints on for a quiz in its *Settings → STACK AI Hinter*.
+
+**Option B: reuse Moodle's built-in AI (no separate key).** If an administrator has configured an AI provider under *Site administration → AI*, leave **AI backend** on **Auto**: the hinter uses Moodle's core AI, inheriting its AI policy and logging. This is the cleanest path for an institution that already runs AI centrally.
+
+> Per hint, only the question text, the student's current answer, the grader feedback and a one-word CAS diagnosis are sent; the model answer is never sent. Pick a provider whose data-handling terms suit your institution.
+
 ## Configure
 
 *Site administration → Plugins → Local plugins → STACK AI Hinter*. The plugin is **disabled by default**

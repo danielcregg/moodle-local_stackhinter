@@ -64,7 +64,7 @@ if ($hassiteconfig) {
         'local_stackhinter/provider',
         get_string('provider', 'local_stackhinter'),
         get_string('provider_desc', 'local_stackhinter'),
-        'openai',
+        'openrouter',
         [
             'openai'     => 'OpenAI',
             'claude'     => 'Anthropic Claude',
