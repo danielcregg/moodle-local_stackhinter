@@ -161,6 +161,11 @@ final class ai_client_test extends \advanced_testcase {
         );
         // Markdown emphasis is stripped.
         $this->assertSame('Use the FOIL method.', ai_client::sanitize('Use the **FOIL** method.'));
+        // LaTeX commands keep the readable word without the backslash.
+        $this->assertSame(
+            'The derivative of sin(x) is cos(x).',
+            ai_client::sanitize('The derivative of \\sin(x) is \\cos(x).')
+        );
         // Echoed prompt labels and a leading list marker are removed.
         $this->assertSame(
             'Re-check your differentiation.',

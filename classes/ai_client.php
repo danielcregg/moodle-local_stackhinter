@@ -337,6 +337,8 @@ class ai_client {
         // LaTeX: \frac{a}{b} -> (a)/(b), then drop \( \) \[ \] \, delimiters.
         $text = preg_replace('/\\\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/', '($1)/($2)', $text);
         $text = preg_replace('/\\\\[()\[\],]/', '', $text);
+        // LaTeX commands such as \sin, \cos, \times: drop the backslash, keep the readable word.
+        $text = preg_replace('/\\\\([a-zA-Z]+)/', '$1', $text);
         // Markdown emphasis and inline maths markers.
         $text = preg_replace('/\*\*([^*]+)\*\*/', '$1', $text);
         $text = preg_replace('/\*([^*]+)\*/', '$1', $text);
