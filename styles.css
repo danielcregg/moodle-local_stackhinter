@@ -35,10 +35,3 @@
 .stackhinter-hint-show {
     display: block;
 }
-
-/* The per-quiz settings note: on wider screens, indent it to line up with the form's field labels. */
-@media (min-width: 768px) {
-    .stackhinter-note {
-        padding-left: 1.5rem;
-    }
-}
