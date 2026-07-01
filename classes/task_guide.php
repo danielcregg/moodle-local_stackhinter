@@ -107,13 +107,15 @@ class task_guide {
     public static function classify(string $question): ?array {
         $q = ' ' . \core_text::strtolower($question) . ' ';
         $task = null;
-        if (strpos($q, 'differentiat') !== false || strpos($q, 'derivative') !== false) {
+        if (strpos($q, 'integra') !== false || strpos($q, 'antiderivative') !== false) {
+            // Integration is tested first: "antiderivative" contains the substring "derivative", so a
+            // differentiate-first test would misread an antiderivative question as differentiation. Also
+            // matches the noun "integral" and integrate/integration/integrand.
+            $task = 'integrate';
+        } else if (strpos($q, 'differentiat') !== false || strpos($q, 'derivative') !== false) {
             // Word-boundary match so "using" does not read as "sin", etc.
             $trig = preg_match('/\b(sin|cos|tan|sec|csc|cot)\b/', $q) === 1;
             $task = $trig ? 'difftrig' : 'differentiate';
-        } else if (strpos($q, 'integra') !== false || strpos($q, 'antiderivative') !== false) {
-            // Match the noun "integral" as well as integrate/integration/integrand.
-            $task = 'integrate';
         } else if (strpos($q, 'expand') !== false || strpos($q, 'multiply out') !== false) {
             $task = 'expand';
         } else if (strpos($q, 'factor') !== false) {

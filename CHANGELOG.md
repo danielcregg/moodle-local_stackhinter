@@ -38,6 +38,10 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   reasoning models were worse.
 
 ### Fixed
+- **Integration questions are now classified correctly (antiderivative wording).** The task classifier tested for
+  "derivative" before "integral"/"antiderivative", but "antiderivative" contains the substring "derivative", so an
+  "find an antiderivative" question was misclassified as differentiation and steered with the wrong method.
+  Integration is now tested first, so antiderivative questions get integration guidance.
 - **Integration hints no longer tell students to add a constant of integration.** The task guidance for
   integration questions steered the model to add a "+C", which contradicts questions that state no constant
   is needed (and STACK's `Antidiff` grading, which accepts any antiderivative) — so a correct answer could be
