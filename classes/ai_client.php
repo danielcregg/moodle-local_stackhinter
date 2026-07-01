@@ -471,7 +471,9 @@ class ai_client {
         );
         $text = preg_replace('/^\s*\d+\.\s+/', '', $text);
         // Strip a chatty interjection some models open with.
-        $text = preg_replace('/^\s*(sure|okay|ok|of course|certainly|absolutely|great question|good question)\b[\s,!:.\-]+/i', '', $text);
+        $interjection = '/^\s*(sure|okay|ok|of course|certainly|absolutely|great question|good question)' .
+            '\b[\s,!:.\-]+/i';
+        $text = preg_replace($interjection, '', $text);
         // Strip an explicit "Here is a hint:" lead-in (requires the word "hint" so it cannot eat real content).
         $text = preg_replace('/^\s*here(?:\'s| is)?(?: a| your)? hint\b[\s,!:.\-]*/i', '', $text);
         // Collapse whitespace left behind.
