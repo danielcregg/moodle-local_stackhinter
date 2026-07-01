@@ -20,6 +20,12 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   sanitises every backend's hint and applies a server-side answer-leak guard.
 
 ### Fixed
+- **On-device model now actually loads in the browser.** Moodle's AMD build (Babel +
+  system-import-transformer) was rewriting the native `import()` of the WebLLM ES module into a RequireJS
+  `require()`, which cannot load an ES module from a CDN — so the on-device backend failed instantly on
+  every browser ("attempts to generate then quickly fails"). The module is now loaded via an injected
+  `<script type="module">`, whose `import()` is plain script text the build leaves untouched, so it runs
+  natively. (A standalone WebGPU PoC using a raw ESM import always worked, which isolated the cause.)
 - **Teachers can now test the hint when previewing their own quiz.** The hint endpoint required
   `mod/quiz:attempt`, which teachers do not hold (they preview with `mod/quiz:preview`), so clicking
   Hint in a quiz preview failed silently and — for the on-device backend — never triggered the

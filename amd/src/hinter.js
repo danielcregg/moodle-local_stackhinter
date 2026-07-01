@@ -47,7 +47,34 @@ const sanitizeHint = (text) => {
 };
 
 /**
- * Load WebLLM once and lazily create the engine for a model, reporting download progress.
+ * Load the WebLLM ES module from the CDN, once.
+ *
+ * We must NOT write a native import(url) expression in this AMD source: Moodle's AMD build (Babel with
+ * the system-import-transformer) rewrites import() into a RequireJS require(), which cannot load an ES
+ * module from a CDN and fails. Instead we run the dynamic import inside an injected module script, where
+ * it is plain text the build never transforms, and bridge the result back through a promise.
+ *
+ * @param {string} url The WebLLM ES module URL (a fixed admin-side constant, never user input).
+ * @return {Promise} A promise resolving to the WebLLM module namespace.
+ */
+const loadWebllm = (url) => {
+    if (!webllmModulePromise) {
+        webllmModulePromise = new Promise((resolve, reject) => {
+            window.stackhinterWebllmResolve = resolve;
+            window.stackhinterWebllmReject = reject;
+            const script = document.createElement('script');
+            script.type = 'module';
+            script.textContent = 'import(' + JSON.stringify(url) + ').then('
+                + 'function(m){window.stackhinterWebllmResolve(m);},'
+                + 'function(e){window.stackhinterWebllmReject(e);});';
+            document.head.appendChild(script);
+        });
+    }
+    return webllmModulePromise;
+};
+
+/**
+ * Lazily create the WebLLM engine for a model, reporting download progress.
  *
  * @param {object} config The hinter configuration passed from PHP.
  * @param {string} model The WebLLM model id to run.
@@ -55,10 +82,7 @@ const sanitizeHint = (text) => {
  * @return {Promise} A promise resolving to the ready WebLLM engine.
  */
 const getEngine = (config, model, onProgress) => {
-    if (!webllmModulePromise) {
-        webllmModulePromise = import(config.webllmurl);
-    }
-    return webllmModulePromise.then((webllm) => {
+    return loadWebllm(config.webllmurl).then((webllm) => {
         if (!enginePromises[model]) {
             enginePromises[model] = webllm.CreateMLCEngine(model, {initProgressCallback: onProgress});
         }
