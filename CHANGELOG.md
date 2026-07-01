@@ -43,11 +43,13 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   for x"; it now distinguishes linear from quadratic (by the presence of an x squared term). "Evaluate ... as a
   decimal" questions had no branch, so their hints used only generic guidance; they now get an order-of-operations
   method. (Surfaced by the research eval, which showed these two task types diluting the grounding effect.)
-- **Grounding no longer mislabels set-valued answers (e.g. a quadratic's solution set).** The CAS diagnosis
-  classified `ratsimp(student - answer)`, but for a solution set such as `{2,3}` that difference is variable-free
-  and was misread as "off by a constant", so a wrong-roots answer received a misleading "you are off by a constant"
-  hint. Set- and list-valued answers now fall back to feedback-only hinting, since the equivalent/constant/structural
-  taxonomy only applies to a single expression.
+- **Grounding no longer mislabels set-, list- or matrix-valued answers (e.g. a quadratic's solution set).** The CAS
+  diagnosis classified `ratsimp(student - answer)`, but for a solution set such as `{2,3}` (and likewise a list or a
+  matrix) that difference is variable-free and was misread as "off by a constant", so a wrong-roots answer received a
+  misleading "you are off by a constant" hint. Set-, list- and matrix-valued answers now fall back to feedback-only
+  hinting, since the equivalent/constant/structural taxonomy only applies to a single scalar expression. (Relational
+  answers such as equations are a rare residual on this path and fail safe — at worst a mislabelled class, never an
+  answer leak — so a dedicated relation guard is deferred.)
 - **Integration questions are now classified correctly (antiderivative wording).** The task classifier tested for
   "derivative" before "integral"/"antiderivative", but "antiderivative" contains the substring "derivative", so an
   "find an antiderivative" question was misclassified as differentiation and steered with the wrong method.

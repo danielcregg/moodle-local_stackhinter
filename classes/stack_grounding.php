@@ -190,13 +190,16 @@ class stack_grounding {
                 new \stack_cas_security()
             );
             $session->add_statement($diff);
-            // Set/list-valued answers (e.g. a quadratic's solution set {2,3}) are not single expressions, so
-            // the ratsimp-difference taxonomy does not apply: ratsimp({2}-{2,3}) is variable-free and would be
-            // misread as "off by a constant". Return -1 for those so the caller falls back to feedback-only
-            // hinting (the diagnosis is only meaningful for a single expression).
+            // Non-scalar answers (a solution set {2,3}, a list [2,3], or a matrix) are not single expressions, so
+            // the ratsimp-difference taxonomy does not apply: e.g. ratsimp({2}-{2,3}) is variable-free and would be
+            // misread as "off by a constant". Guard set/list/matrix operands and return -1 so the caller falls back
+            // to feedback-only hinting (the diagnosis is only meaningful for a single scalar expression). Relational
+            // answers (equations/inequalities) are a known residual: they are rare on this input path and fail safe
+            // (at worst a mislabelled class, never an answer leak, since the answer is never sent), so a robust
+            // relation guard is deferred rather than shipped as untested op()/member() CAS logic.
             $code = \stack_ast_container::make_from_teacher_source(
-                'stackhintercode:if setp(' . $inputname . ') or listp(' . $inputname . ') '
-                . 'or setp(' . $model . ') or listp(' . $model . ') then -1 '
+                'stackhintercode:if setp(' . $inputname . ') or listp(' . $inputname . ') or matrixp(' . $inputname . ') '
+                . 'or setp(' . $model . ') or listp(' . $model . ') or matrixp(' . $model . ') then -1 '
                 . 'elseif is(stackhinterdiff=0) then 0 '
                 . 'elseif emptyp(listofvars(stackhinterdiff)) then 1 else 2',
                 '',
