@@ -38,6 +38,11 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   reasoning models were worse.
 
 ### Fixed
+- **Linear-solve and "evaluate" questions now get correct task guidance.** The task classifier mapped every
+  "solve" question to the quadratic method ("factor, expect two solutions"), which misdirects a linear "solve
+  for x"; it now distinguishes linear from quadratic (by the presence of an x squared term). "Evaluate ... as a
+  decimal" questions had no branch, so their hints used only generic guidance; they now get an order-of-operations
+  method. (Surfaced by the research eval, which showed these two task types diluting the grounding effect.)
 - **Grounding no longer mislabels set-valued answers (e.g. a quadratic's solution set).** The CAS diagnosis
   classified `ratsimp(student - answer)`, but for a solution set such as `{2,3}` that difference is variable-free
   and was misread as "off by a constant", so a wrong-roots answer received a misleading "you are off by a constant"

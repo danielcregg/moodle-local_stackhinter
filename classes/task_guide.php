@@ -88,6 +88,22 @@ class task_guide {
                 . "(3x^2+6x)/(3x), a student left it unchanged. Good hint: \"What common factor can you take out "
                 . "of the top, and what then cancels with the bottom?\"",
         ],
+        'solvelinear' => [
+            'desc' => 'solve the linear equation for x',
+            'method' => 'isolate x: undo the additions and subtractions first, then divide both sides by the '
+                . 'coefficient of x',
+            'example' => "\nExample of the right style (invent your own wording; never copy this): solving "
+                . "2*x+3=9, a student divided before subtracting. Good hint: \"Move the constant to the other "
+                . "side first, then divide by the number in front of x; which step comes first?\"",
+        ],
+        'numerical' => [
+            'desc' => 'evaluate the expression to a single number',
+            'method' => 'substitute any given value and simplify step by step to one number, respecting the '
+                . 'order of operations',
+            'example' => "\nExample of the right style (invent your own wording; never copy this): evaluating "
+                . "2+3*4, a student added first. Good hint: \"Which operation binds tighter here, and so must "
+                . "happen before the addition?\"",
+        ],
     ];
 
     /** @var string Two generic examples, used when the task cannot be classified. */
@@ -121,9 +137,14 @@ class task_guide {
         } else if (strpos($q, 'factor') !== false) {
             $task = 'factor';
         } else if (strpos($q, 'solve') !== false) {
-            $task = 'solve';
+            // Linear vs quadratic: a quadratic has an x^2 term; a linear "solve for x" does not. The
+            // quadratic guide ("factor, expect two solutions") would misdirect a linear equation.
+            $quad = preg_match('/x\^2|x²|quadratic|squared/', $q) === 1;
+            $task = $quad ? 'solve' : 'solvelinear';
         } else if (strpos($q, 'simplif') !== false) {
             $task = 'simplify';
+        } else if (strpos($q, 'evaluate') !== false || strpos($q, 'as a decimal') !== false) {
+            $task = 'numerical';
         }
         if ($task === null || !isset(self::GUIDE[$task])) {
             return null;
