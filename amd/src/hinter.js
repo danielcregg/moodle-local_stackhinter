@@ -336,7 +336,19 @@ const attach = (config, que) => {
             });
         };
 
-        return getEngine(config, data.model, onProgress)
+        return navigator.gpu.requestAdapter()
+            .then((adapter) => {
+                // A software fallback adapter (SwiftShader) reports WebGPU as present but runs the model
+                // unusably slowly and can garble generation, so treat it as no WebGPU rather than attempt
+                // it. The fallback flag lives on adapter.info in current WebGPU and on the adapter itself
+                // in older builds - and Chromium can report it false for SwiftShader - so check all three.
+                const info = adapter && adapter.info;
+                if (!adapter || adapter.isFallbackAdapter || (info && info.isFallbackAdapter)
+                        || (info && String(info.architecture).toLowerCase() === 'swiftshader')) {
+                    throw new Error('stackhinter:nousableadapter');
+                }
+                return getEngine(config, data.model, onProgress);
+            })
             .then((engine) => engine.chat.completions.create({
                 // Gemma 2 has no system role, so fold the system and user prompts into one user message.
                 messages: [{role: 'user', content: data.system + '\n\n' + data.user}],
@@ -361,8 +373,9 @@ const attach = (config, que) => {
                 logOnDevice(hint);
                 return hint;
             })
-            .catch(() => {
-                panel.textContent = strings.unavailable || '';
+            .catch((err) => {
+                panel.textContent = ((err && err.message === 'stackhinter:nousableadapter')
+                    ? strings.nowebgpu : strings.unavailable) || '';
             });
     };
 

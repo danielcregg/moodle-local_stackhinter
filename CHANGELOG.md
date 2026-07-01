@@ -38,6 +38,12 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   reasoning models were worse.
 
 ### Fixed
+- **On-device hints now refuse software-emulated WebGPU instead of hanging.** Some browsers expose WebGPU
+  through a software fallback adapter (SwiftShader) with no real GPU behind it; on such machines the on-device
+  model technically loads but generates at under a tenth of a token per second and can produce garbled text
+  (measured: ~37 minutes for one hint). The plugin now checks the adapter before loading the model and treats a
+  fallback/software adapter the same as no WebGPU, so those users get the clear "needs a WebGPU browser"
+  message (or a configured server backend) instead of an unusable hint.
 - **Linear-solve and "evaluate" questions now get correct task guidance.** The task classifier mapped every
   "solve" question to the quadratic method ("factor, expect two solutions"), which misdirects a linear "solve
   for x"; it now distinguishes linear from quadratic (by the presence of an x squared term). "Evaluate ... as a
