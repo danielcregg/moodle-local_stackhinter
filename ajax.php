@@ -38,7 +38,14 @@ $action = optional_param('action', 'hint', PARAM_ALPHA);
 require_login($course, false, $cm);
 require_sesskey();
 $context = context_module::instance($cm->id);
-require_capability('mod/quiz:attempt', $context);
+// Students attempting the quiz hold mod/quiz:attempt; a teacher previewing their own quiz holds
+// mod/quiz:preview instead (teachers do not have :attempt). Allow either, so a teacher can preview the
+// quiz and test the hint - including triggering the one-time in-browser model download for the on-device
+// backend. This is not a privilege escalation: owns_attempt() below still binds every hint to one of the
+// requesting user's OWN attempts at THIS quiz, so a previewer can only ever hint on their own preview.
+if (!has_capability('mod/quiz:attempt', $context)) {
+    require_capability('mod/quiz:preview', $context);
+}
 
 global $DB, $USER;
 header('Content-Type: application/json; charset=utf-8');

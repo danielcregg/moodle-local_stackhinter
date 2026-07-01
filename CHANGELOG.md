@@ -9,6 +9,23 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
 > release, to make its STACK-specific purpose clear and findable. Earlier entries below describe that
 > same codebase.
 
+## [Unreleased]
+
+### Added
+- **On-device (in-browser) AI backend.** A new "On-device" AI backend runs a small model
+  (`gemma-2-2b` by default, `Llama-3.2-3B` as a backup) entirely in the student's browser via
+  WebLLM/WebGPU — no API key, and no answer data leaves the browser. The server returns only the
+  bounded, CAS-grounded prompt; the generated hint is logged back via a `logondevice` action.
+- **Few-shot prompting, tight decoding, and an output pipeline** (`classes/postprocess.php`) that
+  sanitises every backend's hint and applies a server-side answer-leak guard.
+
+### Fixed
+- **Teachers can now test the hint when previewing their own quiz.** The hint endpoint required
+  `mod/quiz:attempt`, which teachers do not hold (they preview with `mod/quiz:preview`), so clicking
+  Hint in a quiz preview failed silently and — for the on-device backend — never triggered the
+  in-browser model download. The endpoint now accepts either capability; hint requests are still bound
+  to the requester's own attempt, so this grants no access to other users' attempts.
+
 ## [1.2.0-beta] — 2026-06-30
 
 Per-quiz control, plus a naming-consistency and build pass for the first directory release.
