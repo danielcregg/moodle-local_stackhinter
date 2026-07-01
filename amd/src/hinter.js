@@ -287,11 +287,37 @@ const attach = (config, que) => {
             panel.textContent = (strings.download || '{$a}%').replace('{$a}', String(pct));
         };
 
+        // Log a browser-generated hint server-side (fire-and-forget; the ceiling and other guards are
+        // enforced there). Kept out of the then() chain so promises are not nested.
+        const logOnDevice = (hint) => {
+            const ids = qubaSlot(que);
+            const body = new URLSearchParams({
+                sesskey: config.sesskey,
+                cmid: String(config.cmid || ''),
+                action: 'logondevice',
+                question: questionText(que),
+                answer: currentAnswer(que),
+                feedback: graderFeedback(que),
+                attempt: String(thisAttempt),
+                qubaid: ids.qubaid,
+                slot: ids.slot,
+                hint: hint
+            });
+            fetch(config.ajaxurl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: body.toString()
+            }).catch(() => {
+                // Ignore logging failures; the hint is already shown.
+            });
+        };
+
         return getEngine(config, data.model, onProgress)
             .then((engine) => engine.chat.completions.create({
                 // Gemma 2 has no system role, so fold the system and user prompts into one user message.
                 messages: [{role: 'user', content: data.system + '\n\n' + data.user}],
                 temperature: 0.4,
+                // eslint-disable-next-line camelcase
                 max_tokens: 160
             }))
             .then((completion) => {
@@ -300,7 +326,7 @@ const attach = (config, que) => {
                 const hint = sanitizeHint(raw);
                 if (!hint) {
                     panel.textContent = strings.unavailable || '';
-                    return;
+                    return null;
                 }
                 // Commit via the same state and render path as a server hint.
                 state.attempt = thisAttempt;
@@ -308,27 +334,8 @@ const attach = (config, que) => {
                 state.viewing = state.hints.length - 1;
                 state.capped = false;
                 render();
-                // Log it server-side (fire-and-forget; the ceiling and other guards are enforced there).
-                const ids = qubaSlot(que);
-                const body = new URLSearchParams({
-                    sesskey: config.sesskey,
-                    cmid: String(config.cmid || ''),
-                    action: 'logondevice',
-                    question: questionText(que),
-                    answer: currentAnswer(que),
-                    feedback: graderFeedback(que),
-                    attempt: String(thisAttempt),
-                    qubaid: ids.qubaid,
-                    slot: ids.slot,
-                    hint: hint
-                });
-                fetch(config.ajaxurl, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: body.toString()
-                }).catch(() => {
-                    return;
-                });
+                logOnDevice(hint);
+                return hint;
             })
             .catch(() => {
                 panel.textContent = strings.unavailable || '';
