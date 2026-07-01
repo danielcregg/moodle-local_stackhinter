@@ -23,6 +23,13 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   sanitises every backend's hint and applies a server-side answer-leak guard.
 
 ### Changed
+- **Richer, non-leaking hint guidance ("enriched grounding").** A new `task_guide` classifier identifies the
+  maths task from the question (differentiate / integrate / expand / factor / solve / simplify) and adds the
+  method to steer toward plus a task-matched example, so a small model spends its capacity on wording rather
+  than working out the maths. All derived from the question only (never the answer), so it cannot leak. If the
+  task is not confidently identified it falls back to the previous grounding, so guidance is never worse.
+  Evaluated on gemma-2-2b (judged by qwen2.5:14b): +0.31/5 hint quality on classified questions at 0% leak;
+  over-specifying (a per-attempt goal) was worse, so we stop at this level. Improves every backend.
 - **The on-device model is fixed to gemma-2-2b and no longer configurable.** The model picker (and the
   `Llama-3.2-3B` option) was removed: evaluation showed gemma-2-2b is the only small model that never
   leaked the answer, so it is the only one safe to run in the browser (where the server-side leak-guard

@@ -44,8 +44,8 @@ class ai_client {
         'gemini' => ['kind' => 'gemini', 'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/'],
     ];
 
-    /** @var string The Socratic system prompt that instructs the AI to give one escalating hint. */
-    const SYSTEM =
+    /** @var string The Socratic rules. Few-shot examples are appended per task by task_guide::fewshot(). */
+    const SYSTEM_BASE =
         "You are a patient, Socratic mathematics coach embedded in a STACK quiz.\n" .
         "Rules:\n" .
         "- NEVER state the final answer or give a full worked solution. Lead the student to it.\n" .
@@ -59,12 +59,7 @@ class ai_client {
         "- You may also be given an authoritative CAS DIAGNOSIS of the student's answer (whether it is " .
         "equivalent but in the wrong form, off by a constant, or has a wrong term). Trust it over your " .
         "own algebra and use it to target your hint; do not quote it verbatim.\n" .
-        "- Be encouraging and concise. Plain text only: no markdown, asterisks, or LaTeX/backslash delimiters.\n" .
-        "Two examples of the right style (invent your own wording for the real question, never copy these):\n" .
-        "- Differentiating x^3, a student wrote x^2. Good hint: \"The power rule brings the exponent down as " .
-        "a coefficient and lowers it by one; what does that do to x^3?\"\n" .
-        "- Asked to expand (x+1)(x+2), a student left it factored. Good hint: \"That is the right expression, " .
-        "but the question wants it multiplied out; what do you get when each term multiplies each term?\"";
+        "- Be encouraging and concise. Plain text only: no markdown, asterisks, or LaTeX/backslash delimiters.";
 
     /**
      * Resolve which AI backend handles a request: 'core' (Moodle's AI subsystem), 'own' (this plugin's
@@ -142,7 +137,11 @@ class ai_client {
         ?\context $context = null,
         int $userid = 0
     ): string {
-        $user = self::build_user($question, $answer, $feedback, $attempt, $grounding);
+        // Non-leaking task guidance lets a small model spend its capacity on wording, not the maths;
+        // null = task not identified, so we fall back to the plain grounding (never worse than before).
+        $guide = task_guide::classify($question);
+        $system = self::SYSTEM_BASE . task_guide::fewshot($guide);
+        $user = self::build_user($question, $answer, $feedback, $attempt, $grounding, $guide);
 
         // Route through Moodle's core AI when selected/available.
         if (self::resolve_backend($context) === 'core') {
@@ -153,7 +152,7 @@ class ai_client {
             if (!core_ai::policy_accepted($userid)) {
                 throw new \moodle_exception('aipolicyrequired', 'local_stackhinter');
             }
-            $text = core_ai::generate_text($context, $userid, self::SYSTEM . "\n\n" . $user);
+            $text = core_ai::generate_text($context, $userid, $system . "\n\n" . $user);
             // No silent failover to a different provider: the admin chose core, so surface the failure.
             if ($text === null || trim($text) === '') {
                 throw new \moodle_exception('aifailed', 'local_stackhinter', '', 'core AI provider failed');
@@ -181,13 +180,13 @@ class ai_client {
 
         switch ($p['kind']) {
             case 'openai':
-                $text = self::call_openai($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_openai($endpoint, $key, $model, $system, $user);
                 break;
             case 'gemini':
-                $text = self::call_gemini($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_gemini($endpoint, $key, $model, $system, $user);
                 break;
             case 'anthropic':
-                $text = self::call_anthropic($endpoint, $key, $model, self::SYSTEM, $user);
+                $text = self::call_anthropic($endpoint, $key, $model, $system, $user);
                 break;
             default:
                 throw new \moodle_exception('noprovider', 'local_stackhinter');
@@ -250,12 +249,19 @@ class ai_client {
         string $answer,
         string $feedback,
         int $attempt,
-        array $grounding
+        array $grounding,
+        ?array $guide = null
     ): string {
+        $taskblock = '';
+        if ($guide !== null) {
+            $taskblock = "TASK: {$guide['desc']}\n"
+                . "METHOD TO GUIDE THE STUDENT TOWARD (do not state the final value): {$guide['method']}\n";
+        }
         return "QUESTION: {$question}\n"
             . "STUDENT'S ANSWER: " . ($answer !== '' ? $answer : '(blank)') . "\n"
             . "GRADER FEEDBACK: " . ($feedback !== '' ? $feedback : '(none)') . "\n"
             . self::grounding_block($grounding)
+            . $taskblock
             . "ATTEMPT NUMBER: {$attempt}\n"
             . "Give one Socratic hint appropriate to this attempt number.";
     }
@@ -278,9 +284,10 @@ class ai_client {
         int $attempt,
         array $grounding = []
     ): array {
+        $guide = task_guide::classify($question);
         return [
-            'system' => self::SYSTEM,
-            'user' => self::build_user($question, $answer, $feedback, $attempt, $grounding),
+            'system' => self::SYSTEM_BASE . task_guide::fewshot($guide),
+            'user' => self::build_user($question, $answer, $feedback, $attempt, $grounding, $guide),
         ];
     }
 
