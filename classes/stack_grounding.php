@@ -190,8 +190,14 @@ class stack_grounding {
                 new \stack_cas_security()
             );
             $session->add_statement($diff);
+            // Set/list-valued answers (e.g. a quadratic's solution set {2,3}) are not single expressions, so
+            // the ratsimp-difference taxonomy does not apply: ratsimp({2}-{2,3}) is variable-free and would be
+            // misread as "off by a constant". Return -1 for those so the caller falls back to feedback-only
+            // hinting (the diagnosis is only meaningful for a single expression).
             $code = \stack_ast_container::make_from_teacher_source(
-                'stackhintercode:if is(stackhinterdiff=0) then 0 '
+                'stackhintercode:if setp(' . $inputname . ') or listp(' . $inputname . ') '
+                . 'or setp(' . $model . ') or listp(' . $model . ') then -1 '
+                . 'elseif is(stackhinterdiff=0) then 0 '
                 . 'elseif emptyp(listofvars(stackhinterdiff)) then 1 else 2',
                 '',
                 new \stack_cas_security()
