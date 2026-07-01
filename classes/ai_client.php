@@ -59,7 +59,12 @@ class ai_client {
         "- You may also be given an authoritative CAS DIAGNOSIS of the student's answer (whether it is " .
         "equivalent but in the wrong form, off by a constant, or has a wrong term). Trust it over your " .
         "own algebra and use it to target your hint; do not quote it verbatim.\n" .
-        "- Be encouraging and concise. Plain text only: no markdown, asterisks, or LaTeX/backslash delimiters.";
+        "- Be encouraging and concise. Plain text only: no markdown, asterisks, or LaTeX/backslash delimiters.\n" .
+        "Two examples of the right style (invent your own wording for the real question, never copy these):\n" .
+        "- Differentiating x^3, a student wrote x^2. Good hint: \"The power rule brings the exponent down as " .
+        "a coefficient and lowers it by one; what does that do to x^3?\"\n" .
+        "- Asked to expand (x+1)(x+2), a student left it factored. Good hint: \"That is the right expression, " .
+        "but the question wants it multiplied out; what do you get when each term multiplies each term?\"";
 
     /**
      * Resolve which AI backend handles a request: 'core' (Moodle's AI subsystem) or 'own' (this
@@ -75,6 +80,9 @@ class ai_client {
         }
         if ($backend === 'own') {
             return 'own';
+        }
+        if ($backend === 'ondevice') {
+            return 'ondevice';
         }
         // Auto (default): prefer core only when it is actually available, else this plugin's provider.
         return ($context !== null && core_ai::available()) ? 'core' : 'own';
@@ -115,12 +123,7 @@ class ai_client {
         ?\context $context = null,
         int $userid = 0
     ): string {
-        $user = "QUESTION: {$question}\n"
-            . "STUDENT'S ANSWER: " . ($answer !== '' ? $answer : '(blank)') . "\n"
-            . "GRADER FEEDBACK: " . ($feedback !== '' ? $feedback : '(none)') . "\n"
-            . self::grounding_block($grounding)
-            . "ATTEMPT NUMBER: {$attempt}\n"
-            . "Give one Socratic hint appropriate to this attempt number.";
+        $user = self::build_user($question, $answer, $feedback, $attempt, $grounding);
 
         // Route through Moodle's core AI when selected/available.
         if (self::resolve_backend($context) === 'core') {
@@ -136,7 +139,7 @@ class ai_client {
             if ($text === null || trim($text) === '') {
                 throw new \moodle_exception('aifailed', 'local_stackhinter', '', 'core AI provider failed');
             }
-            return self::nonempty(self::sanitize($text));
+            return self::guard(self::nonempty(self::sanitize($text)), $grounding);
         }
 
         // This plugin's own provider path.
@@ -170,7 +173,7 @@ class ai_client {
             default:
                 throw new \moodle_exception('noprovider', 'local_stackhinter');
         }
-        return self::nonempty(self::sanitize($text));
+        return self::guard(self::nonempty(self::sanitize($text)), $grounding);
     }
 
     /**
@@ -209,6 +212,114 @@ class ai_client {
         }
         return "CAS DIAGNOSIS (computed by the question's own Maxima — authoritative): "
             . $facts[$class] . ".\n";
+    }
+
+    /**
+     * Assemble the user-turn prompt (question, answer, feedback, the grounded diagnosis, attempt).
+     *
+     * Only the diagnosis CLASS is included from $grounding; the model answer is never put in the prompt.
+     *
+     * @param string $question The question text.
+     * @param string $answer The student's current answer.
+     * @param string $feedback The grader feedback.
+     * @param int $attempt The hint attempt number.
+     * @param array $grounding Optional CAS diagnosis (['class' => ...]).
+     * @return string The user-turn prompt.
+     */
+    private static function build_user(
+        string $question,
+        string $answer,
+        string $feedback,
+        int $attempt,
+        array $grounding
+    ): string {
+        return "QUESTION: {$question}\n"
+            . "STUDENT'S ANSWER: " . ($answer !== '' ? $answer : '(blank)') . "\n"
+            . "GRADER FEEDBACK: " . ($feedback !== '' ? $feedback : '(none)') . "\n"
+            . self::grounding_block($grounding)
+            . "ATTEMPT NUMBER: {$attempt}\n"
+            . "Give one Socratic hint appropriate to this attempt number.";
+    }
+
+    /**
+     * The system + user prompt for a hint, for backends that run the model elsewhere (the on-device
+     * browser backend). The model answer is never included — only the bounded diagnosis class.
+     *
+     * @param string $question The question text.
+     * @param string $answer The student's current answer.
+     * @param string $feedback The grader feedback.
+     * @param int $attempt The hint attempt number.
+     * @param array $grounding Optional CAS diagnosis (['class' => ...]).
+     * @return array ['system' => string, 'user' => string].
+     */
+    public static function build_messages(
+        string $question,
+        string $answer,
+        string $feedback,
+        int $attempt,
+        array $grounding = []
+    ): array {
+        return [
+            'system' => self::SYSTEM,
+            'user' => self::build_user($question, $answer, $feedback, $attempt, $grounding),
+        ];
+    }
+
+    /**
+     * The configured on-device (in-browser) model id, defaulting to gemma-2-2b.
+     *
+     * @return string A WebLLM model id.
+     */
+    public static function ondevice_model(): string {
+        $m = trim((string) get_config('local_stackhinter', 'ondevicemodel'));
+        return $m !== '' ? $m : 'gemma-2-2b-it-q4f16_1-MLC';
+    }
+
+    /**
+     * If a generated hint contains the (server-side-only) model answer, replace it with a safe,
+     * diagnosis-based fallback. The model answer is computed by Maxima and never sent to the model, but a
+     * weak model can still reconstruct and state it; this is the last line of defence against a leak.
+     *
+     * @param string $hint The cleaned hint.
+     * @param array $grounding The grounding, which may carry the server-side 'answer'.
+     * @return string The hint, or a safe fallback if it leaked the answer.
+     */
+    public static function guard(string $hint, array $grounding): string {
+        $answer = (string) ($grounding['answer'] ?? '');
+        if ($answer !== '' && self::leaks($hint, $answer)) {
+            return self::safe_fallback($grounding);
+        }
+        return $hint;
+    }
+
+    /**
+     * Whether a hint literally contains the model answer (ignoring spacing and asterisks). Very short
+     * answers (under three characters, e.g. "x" or "0") are skipped to avoid false positives.
+     *
+     * @param string $hint The hint text.
+     * @param string $answer The model answer.
+     * @return bool True if the hint appears to state the answer.
+     */
+    private static function leaks(string $hint, string $answer): bool {
+        $norm = static function (string $s): string {
+            return strtolower((string) preg_replace('/[\s*]+/', '', $s));
+        };
+        $a = $norm($answer);
+        return strlen($a) >= 3 && strpos($norm($hint), $a) !== false;
+    }
+
+    /**
+     * A safe, non-revealing fallback hint built from the diagnosis class, used when a generated hint
+     * leaked the answer.
+     *
+     * @param array $grounding The grounding (['class' => ...]).
+     * @return string A generic but safe Socratic nudge.
+     */
+    private static function safe_fallback(array $grounding): string {
+        $class = $grounding['class'] ?? '';
+        $key = in_array($class, ['equivalent', 'constant', 'structural'], true)
+            ? 'fallback_' . $class : 'fallback_generic';
+        return get_string($key, 'local_stackhinter');
     }
 
     /**
@@ -261,10 +372,16 @@ class ai_client {
      */
     private static function call_openai(string $endpoint, string $key, string $model, string $system, string $user): string {
         $j = self::http($endpoint, ['Content-Type: application/json', 'Authorization: Bearer ' . $key], [
-            'model' => $model, 'temperature' => 0.7,
+            'model' => $model, 'temperature' => 0.4, 'max_tokens' => 160, 'stop' => ["\n\n"],
             'messages' => [['role' => 'system', 'content' => $system], ['role' => 'user', 'content' => $user]],
         ]);
-        return self::nonempty(trim($j['choices'][0]['message']['content'] ?? ''));
+        $msg = $j['choices'][0]['message'] ?? [];
+        $content = trim((string) ($msg['content'] ?? ''));
+        // A "thinking" model with reasoning enabled returns its reasoning separately and an empty answer.
+        if ($content === '' && (!empty($msg['reasoning']) || !empty($msg['reasoning_content']))) {
+            throw new \moodle_exception('aireasoningmodel', 'local_stackhinter');
+        }
+        return self::nonempty($content);
     }
 
     /**
@@ -282,7 +399,7 @@ class ai_client {
         $j = self::http($url, ['Content-Type: application/json'], [
             'systemInstruction' => ['parts' => [['text' => $system]]],
             'contents' => [['role' => 'user', 'parts' => [['text' => $user]]]],
-            'generationConfig' => ['temperature' => 0.7],
+            'generationConfig' => ['temperature' => 0.4, 'maxOutputTokens' => 160, 'stopSequences' => ["\n\n"]],
         ]);
         $parts = $j['candidates'][0]['content']['parts'] ?? [];
         $text = '';
@@ -308,7 +425,9 @@ class ai_client {
             ['Content-Type: application/json', 'x-api-key: ' . $key, 'anthropic-version: 2023-06-01'],
             [
                 'model' => $model,
-                'max_tokens' => 1024,
+                'max_tokens' => 200,
+                'temperature' => 0.4,
+                'stop_sequences' => ["\n\n"],
                 'system' => $system,
                 'messages' => [['role' => 'user', 'content' => $user]],
             ]
@@ -351,10 +470,24 @@ class ai_client {
             $text
         );
         $text = preg_replace('/^\s*\d+\.\s+/', '', $text);
+        // Strip a chatty interjection some models open with.
+        $text = preg_replace('/^\s*(sure|okay|ok|of course|certainly|absolutely|great question|good question)\b[\s,!:.\-]+/i', '', $text);
+        // Strip an explicit "Here is a hint:" lead-in (requires the word "hint" so it cannot eat real content).
+        $text = preg_replace('/^\s*here(?:\'s| is)?(?: a| your)? hint\b[\s,!:.\-]*/i', '', $text);
         // Collapse whitespace left behind.
         $text = preg_replace('/[ \t]{2,}/', ' ', $text);
         $text = preg_replace('/\n{2,}/', "\n", $text);
-        return trim($text);
+        $text = trim($text);
+        // Keep it brief: small models ignore the "1-3 sentences" rule, so cap at the first three.
+        $parts = preg_split('/(?<=[.!?])\s+/', $text);
+        if (is_array($parts) && count($parts) > 3) {
+            $text = implode(' ', array_slice($parts, 0, 3));
+        }
+        // Capitalise the first letter when it begins a word (never a lone maths variable such as x).
+        if (strlen($text) >= 2 && ctype_lower($text[0]) && ctype_alpha($text[1])) {
+            $text = ucfirst($text);
+        }
+        return $text;
     }
 
     /**

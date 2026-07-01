@@ -39,7 +39,14 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
 ### Changed
 - **Hint output is now sanitised** server-side before it is stored or shown: reasoning/`<think>` blocks
   (e.g. from Qwen3-family models), LaTeX delimiters and commands (`\(`, `\frac`, `\sin`, ...), markdown
-  emphasis, echoed prompt labels and leading list markers are stripped. The system prompt now also tells the model to address the student directly and to
+  emphasis, echoed prompt labels and leading list markers are stripped.
+- **Better hints from weaker models (pre/post-processing).** The system prompt now includes two worked
+  examples (few-shot); generation uses tighter decoding (lower temperature, a token cap and a stop
+  sequence). The sanitiser additionally strips chatty preambles, caps a hint at three sentences and
+  capitalises the first word. A **server-side answer-leak filter** checks each generated hint against the
+  teacher answer (computed by Maxima, never sent to the model) and substitutes a safe, diagnosis-based hint
+  if the model stated the answer. A reasoning ("thinking") model that returns only its reasoning is now
+  detected and reported rather than failing silently. The system prompt now also tells the model to address the student directly and to
   output only the hint. Together these remove the formatting artefacts and prompt-parroting that smaller or
   self-hosted models can otherwise produce. (Backed by an on-device model evaluation across the latest
   small web-runnable models; gemma-2-2b-class models give the best small-model hints.)

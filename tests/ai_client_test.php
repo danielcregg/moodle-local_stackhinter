@@ -171,5 +171,30 @@ final class ai_client_test extends \advanced_testcase {
             'Re-check your differentiation.',
             ai_client::sanitize("STUDENT'S ANSWER: x^2\n1. Re-check your differentiation.")
         );
+        // Chatty preambles are stripped.
+        $this->assertSame('Use the power rule.', ai_client::sanitize("Sure! Here's a hint: Use the power rule."));
+        $this->assertSame('Think about the power rule.', ai_client::sanitize('Okay, think about the power rule.'));
+        // At most three sentences are kept.
+        $this->assertSame('One. Two. Three.', ai_client::sanitize('One. Two. Three. Four. Five.'));
+    }
+
+    /**
+     * The leak guard replaces a hint that states the model answer with a safe, class-based fallback,
+     * and leaves a non-leaking hint untouched.
+     *
+     * @return void
+     */
+    public function test_guard_blocks_answer_leak(): void {
+        $grounding = ['class' => 'structural', 'answer' => '3x^2'];
+        // A hint that states the answer is swapped for the structural fallback.
+        $this->assertSame(
+            get_string('fallback_structural', 'local_stackhinter'),
+            ai_client::guard('The correct derivative is 3x^2, not x^2.', $grounding)
+        );
+        // A non-leaking hint is returned unchanged.
+        $safe = 'Remember the power rule and re-check your exponent.';
+        $this->assertSame($safe, ai_client::guard($safe, $grounding));
+        // With no model answer in the grounding the hint always passes through.
+        $this->assertSame('anything', ai_client::guard('anything', ['class' => 'structural']));
     }
 }

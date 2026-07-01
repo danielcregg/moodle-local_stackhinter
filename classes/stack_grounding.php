@@ -98,7 +98,7 @@ class stack_grounding {
      * @param int $qubaid The question usage id (from the field prefix q{usageid}:{slot}_).
      * @param int $slot The question slot within the usage.
      * @param string $studentanswer The answer the student currently has typed (the one they see).
-     * @return array|null ['class' => string] or null to fall back to feedback-only hinting.
+     * @return array|null ['class' => string, 'answer' => string] (answer is server-side only) or null.
      */
     public static function for_request(\cm_info $cm, int $userid, int $qubaid, int $slot, string $studentanswer): ?array {
         // The usage must be one of THIS user's attempts at THIS quiz (a forged usage id yields no grounding).
@@ -122,7 +122,7 @@ class stack_grounding {
      *
      * @param \question_attempt $qa The question attempt.
      * @param string $studentanswer The answer the student currently has typed.
-     * @return array|null ['class' => string] or null if unavailable.
+     * @return array|null ['class' => string, 'answer' => string] (answer is server-side only) or null.
      */
     public static function for_question_attempt(\question_attempt $qa, string $studentanswer): ?array {
         try {
@@ -148,7 +148,9 @@ class stack_grounding {
             if ($code === null || !isset(self::CLASSES[$code])) {
                 return null;
             }
-            return ['class' => self::CLASSES[$code]];
+            // 'answer' is the teacher answer, kept SERVER-SIDE only (for the leak guard); it is never
+            // placed in the prompt or returned to the browser.
+            return ['class' => self::CLASSES[$code], 'answer' => $model];
         } catch (\Throwable $e) {
             debugging('local_stackhinter grounding failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
             return null;
