@@ -242,6 +242,7 @@ class ai_client {
      * @param string $feedback The grader feedback.
      * @param int $attempt The hint attempt number.
      * @param array $grounding Optional CAS diagnosis (['class' => ...]).
+     * @param array|null $guide Optional task guidance (['task','desc','method']) from task_guide::classify().
      * @return string The user-turn prompt.
      */
     private static function build_user(
