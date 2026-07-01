@@ -28,14 +28,21 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   method to steer toward plus a task-matched example, so a small model spends its capacity on wording rather
   than working out the maths. All derived from the question only (never the answer), so it cannot leak. If the
   task is not confidently identified it falls back to the previous grounding, so guidance is never worse.
-  Evaluated on gemma-2-2b (judged by qwen2.5:14b): +0.31/5 hint quality on classified questions at 0% leak;
-  over-specifying (a per-attempt goal) was worse, so we stop at this level. Improves every backend.
+  Evaluated on gemma-2-2b (judged by qwen2.5:14b): +0.31/5 hint quality on classified questions with no
+  observed answer-leak; over-specifying (a per-attempt goal) was worse, so we stop at this level. Improves
+  every backend.
 - **The on-device model is fixed to gemma-2-2b and no longer configurable.** The model picker (and the
-  `Llama-3.2-3B` option) was removed: evaluation showed gemma-2-2b is the only small model that never
-  leaked the answer, so it is the only one safe to run in the browser (where the server-side leak-guard
-  cannot run). Llama-3.2-3B leaked 2–4% and Gemma 4 / other reasoning models were worse.
+  `Llama-3.2-3B` option) was removed: evaluation showed gemma-2-2b is the only small model that did not
+  leak the answer in our tests (0 observed leaks across all sampled hints), so it is the safest to run in
+  the browser (where the server-side leak-guard cannot run). Llama-3.2-3B leaked 2–4% and Gemma 4 / other
+  reasoning models were worse.
 
 ### Fixed
+- **Integration hints no longer tell students to add a constant of integration.** The task guidance for
+  integration questions steered the model to add a "+C", which contradicts questions that state no constant
+  is needed (and STACK's `Antidiff` grading, which accepts any antiderivative) — so a correct answer could be
+  hinted as incomplete. The integration guidance is now method-focused (reverse the power rule: raise the
+  exponent and divide by that new exponent) and asserts no convention about the constant.
 - **On-device model now actually loads in the browser.** Moodle's AMD build (Babel +
   system-import-transformer) was rewriting the native `import()` of the WebLLM ES module into a RequireJS
   `require()`, which cannot load an ES module from a CDN — so the on-device backend failed instantly on

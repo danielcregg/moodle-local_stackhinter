@@ -52,11 +52,11 @@ class task_guide {
                 . "derivatives of sine and cosine; which one picks up a minus sign?\"",
         ],
         'integrate' => [
-            'desc' => 'find the indefinite integral (the antiderivative)',
-            'method' => 'reverse the power rule, and remember to add a constant of integration',
+            'desc' => 'find an antiderivative of the function',
+            'method' => 'reverse the power rule: raise the exponent by one and divide by that new exponent',
             'example' => "\nExample of the right style (invent your own wording; never copy this): "
-                . "integrating 3x^2, a student wrote x^3 and nothing else. Good hint: \"Differentiating your "
-                . "answer returns the integrand, but what term differentiates to zero and so could be missing?\"",
+                . "integrating x^2, a student wrote x^3 without dividing. Good hint: \"Reversing the power rule "
+                . "raises the exponent by one, but what must you then divide by so differentiating gets you back?\"",
         ],
         'expand' => [
             'desc' => 'expand by multiplying out the brackets',
