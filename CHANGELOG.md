@@ -35,6 +35,16 @@ Per-quiz control, plus a naming-consistency and build pass for the first directo
 - **Quick-start guidance for a free setup.** The own-provider settings now describe a roughly 2-minute,
   no-cost path (a free OpenRouter model ending in `:free`, or Google Gemini's free tier) with direct links,
   and the README has a matching "Quick start" section.
+- **On-device AI backend (no key, no external provider).** A new **On-device AI** choice for the AI backend
+  runs a small language model entirely in the student's browser via WebGPU (WebLLM), so hints are generated
+  locally with no API key and nothing sent to any external AI provider. A new **On-device model** setting
+  picks the model: **Gemma 2 2B** (`gemma-2-2b-it-q4f16_1-MLC`, the recommended default: smallest and
+  fastest) or **Llama 3.2 3B** (`Llama-3.2-3B-Instruct-q4f16_1-MLC`, a higher-quality alternative that
+  downloads more data). The browser downloads the chosen model once from a public CDN and caches it; a
+  WebGPU-capable browser is required, and a browser without WebGPU is told on-device hints are unavailable
+  (no hint is consumed). Hints generated on-device are logged like server-side hints. "Thinking"/reasoning
+  models are not offered because they tend to reveal the answer, and the own-provider model help text now
+  warns against reasoning models for the same reason.
 
 ### Changed
 - **Hint output is now sanitised** server-side before it is stored or shown: reasoning/`<think>` blocks

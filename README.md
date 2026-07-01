@@ -30,10 +30,12 @@ sequenceDiagram
 - **Moodle 4.5 LTS** or later (developed and tested on 4.5; uses the Hooks API).
 - The **STACK question type** (`qtype_stack`) — the hinter targets STACK questions and declares
   `qtype_stack` as a dependency.
-- An **AI backend**: either Moodle's built-in **core AI** (configure a provider under *Site
-  administration → AI* — no separate key needed) **or** this plugin's own API key for one external
+- An **AI backend**, one of: Moodle's built-in **core AI** (configure a provider under *Site
+  administration → AI* — no separate key needed); this plugin's own API key for one external
   provider (OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, OpenRouter, Groq, Mistral, Cerebras,
-  or an OpenAI-compatible gateway). AWS Bedrock additionally takes an AWS region.
+  or an OpenAI-compatible gateway — AWS Bedrock additionally takes an AWS region); or **on-device AI**,
+  which runs a small model in the student's browser with **no key and no external provider** (a
+  WebGPU-capable browser is required — see [On-device AI](#on-device-ai-in-the-browser)).
 
 ## Install
 
@@ -55,7 +57,9 @@ The plugin ships **inert** (disabled, with no key). Two no-cost ways to make it 
 
 **Option B: reuse Moodle's built-in AI (no separate key).** If an administrator has configured an AI provider under *Site administration → AI*, leave **AI backend** on **Auto**: the hinter uses Moodle's core AI, inheriting its AI policy and logging. This is the cleanest path for an institution that already runs AI centrally.
 
-> Per hint, only the question text, the student's current answer, the grader feedback and a one-word CAS diagnosis are sent; the model answer is never sent. Pick a provider whose data-handling terms suit your institution.
+**Option C: on-device AI (no key, nothing leaves the browser).** Set **AI backend** to **On-device AI**. A small model runs in each student's browser via WebGPU, so no API key or external provider is involved and no answer data is sent anywhere. The browser downloads the model once (a few hundred MB) from a public CDN and caches it; a recent, WebGPU-capable browser is required. See [On-device AI](#on-device-ai-in-the-browser).
+
+> With the server-side backends (Options A and B), each hint sends only the question text, the student's current answer, the grader feedback and a one-word CAS diagnosis; the model answer is never sent. Pick a provider whose data-handling terms suit your institution. (Option C sends nothing to any AI provider.)
 
 ## Configure
 
@@ -65,7 +69,8 @@ and does nothing until you:
 | Setting | Description |
 |---|---|
 | **Enable STACK AI Hinter** | Site master switch (off by default). When on, teachers turn hints on **per quiz** (off by default) in each quiz's settings — so they never appear on a quiz nobody opted in, including exams. |
-| **AI backend** | Moodle's built-in core AI, this plugin's own provider/key, or *Auto* (prefers core when available). |
+| **AI backend** | Moodle's built-in core AI, this plugin's own provider/key, **On-device AI** (runs in the student's browser via WebGPU — no key, no external provider), or *Auto* (prefers core when available). |
+| **On-device model** | Which browser model to run when the backend is *On-device AI*: **Gemma 2 2B** (recommended) or **Llama 3.2 3B**. Shown only when the on-device backend is selected. |
 | **AI provider** | Which external service generates hints (used by the own-provider backend). |
 | **Model** | The model id, e.g. `gpt-4o-mini`, `gemini-2.5-flash`, `claude-3-5-haiku`. |
 | **AI API key** | Stored server-side, never sent to the browser. |
@@ -100,15 +105,43 @@ back to hinting from the question text and grader feedback alone. The student va
 through STACK's own validated-input path, and the question usage is verified to belong to the student's
 own attempt first.
 
+## On-device AI (in the browser)
+
+Instead of a server-side provider, the hinter can run a small language model **entirely in the student's
+browser** using WebGPU (via [WebLLM](https://github.com/mlc-ai/web-llm)). Set **AI backend** to
+**On-device AI** in the plugin settings. In this mode:
+
+- **No API key and no external AI provider are involved.** The question text, the student's answer, the
+  grader feedback and the one-word CAS diagnosis are processed locally in the browser and are **never**
+  sent to any external AI service. The only network request the model makes is a **one-time download** of
+  the model weights from a public CDN (cached by the browser afterwards); that request carries no personal
+  data.
+- **Model choice** (the *On-device model* setting):
+  - **Gemma 2 2B** (`gemma-2-2b-it-q4f16_1-MLC`) — the default and recommendation: the smallest and
+    fastest, with the best small-model hints in our evaluation.
+  - **Llama 3.2 3B** (`Llama-3.2-3B-Instruct-q4f16_1-MLC`) — a higher-quality alternative that downloads
+    and runs more data.
+
+  "Thinking"/reasoning models are deliberately not offered: they tend to output their reasoning and can
+  reveal the answer.
+- **Requirements:** a recent, **WebGPU-capable** browser (current Chrome, Edge, or equivalent) with enough
+  memory for the model. If a student's browser has no WebGPU, the hint button reports that on-device hints
+  are unavailable and no hint is consumed; an administrator can instead choose a server-side backend.
+- Hints generated on-device are logged to `local_stackhinter_hints` exactly like server-side hints (the
+  browser posts the finished hint back to the plugin), and the same per-quiz opt-in and hint caps apply.
+
 ## Privacy
 
-This plugin **stores** a per-user hint log (`local_stackhinter_hints`) and **discloses** the question
-text, the student's answer, the grader feedback, and (for STACK questions) a short qualitative
-diagnosis of the answer to the configured AI backend in order to generate a hint. When the backend is
-Moodle's built-in core AI, the request is handled by Moodle's core AI subsystem, which governs that
-disclosure. The model answer and exact CAS values are never sent. All of this is declared via the
-Moodle Privacy API (`classes/privacy/`), including full export and deletion support. Choose a provider
-whose data-handling terms suit your institution.
+This plugin **stores** a per-user hint log (`local_stackhinter_hints`) and, for the server-side backends,
+**discloses** the question text, the student's answer, the grader feedback, and (for STACK questions) a
+short qualitative diagnosis of the answer to the configured AI backend in order to generate a hint. When
+the backend is Moodle's built-in core AI, the request is handled by Moodle's core AI subsystem, which
+governs that disclosure. When the backend is **on-device AI**, the model runs in the student's browser and
+**nothing is sent to any external AI provider** — the question, answer, feedback and diagnosis are
+processed locally, and the only external request is the one-time model download from a public CDN, which
+carries no personal data. The model answer and exact CAS values are never sent in any mode. All of this is
+declared via the Moodle Privacy API (`classes/privacy/`), including full export and deletion support.
+Choose a backend and provider whose data-handling terms suit your institution.
 
 ## Security
 

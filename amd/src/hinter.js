@@ -23,6 +23,49 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+// Cache one WebLLM engine per model id across all questions on the page (download once).
+let webllmModulePromise = null;
+const enginePromises = {}; // Model id -> Promise<engine>.
+
+/**
+ * Sanitize an on-device hint in the browser, mirroring the server postprocess rules.
+ *
+ * The server postprocess::sanitize cannot run on-device, so apply the same cleanup here:
+ * strip markdown markers, collapse to a single line, and cap the length.
+ *
+ * @param {string} text The raw model output.
+ * @return {string} The cleaned, single-line hint.
+ */
+const sanitizeHint = (text) => {
+    let t = String(text || '');
+    // Strip markdown emphasis, code and heading markers.
+    t = t.replace(/[*_`#>]/g, '');
+    // Collapse all whitespace to a single line.
+    t = t.replace(/\s+/g, ' ').trim();
+    // Apply a hard length cap.
+    return t.slice(0, 500);
+};
+
+/**
+ * Load WebLLM once and lazily create the engine for a model, reporting download progress.
+ *
+ * @param {object} config The hinter configuration passed from PHP.
+ * @param {string} model The WebLLM model id to run.
+ * @param {Function} onProgress The WebLLM init-progress callback.
+ * @return {Promise} A promise resolving to the ready WebLLM engine.
+ */
+const getEngine = (config, model, onProgress) => {
+    if (!webllmModulePromise) {
+        webllmModulePromise = import(config.webllmurl);
+    }
+    return webllmModulePromise.then((webllm) => {
+        if (!enginePromises[model]) {
+            enginePromises[model] = webllm.CreateMLCEngine(model, {initProgressCallback: onProgress});
+        }
+        return enginePromises[model];
+    });
+};
+
 /**
  * Read the question text from a question element.
  *
@@ -228,6 +271,70 @@ const attach = (config, que) => {
         }
     };
 
+    // Run the model in the student's browser, then commit and log the hint exactly like a server hint.
+    const runOnDevice = (data, thisAttempt) => {
+        // No WebGPU means the model cannot run on-device; show the message and do not consume a hint.
+        if (!navigator.gpu) {
+            panel.textContent = strings.nowebgpu || '';
+            return Promise.resolve();
+        }
+        panel.classList.add('stackhinter-hint-show');
+        panel.textContent = strings.loading || '';
+
+        // Report the one-time model download progress as a percentage.
+        const onProgress = (report) => {
+            const pct = Math.round((report && report.progress ? report.progress : 0) * 100);
+            panel.textContent = (strings.download || '{$a}%').replace('{$a}', String(pct));
+        };
+
+        return getEngine(config, data.model, onProgress)
+            .then((engine) => engine.chat.completions.create({
+                // Gemma 2 has no system role, so fold the system and user prompts into one user message.
+                messages: [{role: 'user', content: data.system + '\n\n' + data.user}],
+                temperature: 0.4,
+                max_tokens: 160
+            }))
+            .then((completion) => {
+                const raw = completion && completion.choices && completion.choices[0]
+                    && completion.choices[0].message ? completion.choices[0].message.content : '';
+                const hint = sanitizeHint(raw);
+                if (!hint) {
+                    panel.textContent = strings.unavailable || '';
+                    return;
+                }
+                // Commit via the same state and render path as a server hint.
+                state.attempt = thisAttempt;
+                state.hints.push(hint);
+                state.viewing = state.hints.length - 1;
+                state.capped = false;
+                render();
+                // Log it server-side (fire-and-forget; the ceiling and other guards are enforced there).
+                const ids = qubaSlot(que);
+                const body = new URLSearchParams({
+                    sesskey: config.sesskey,
+                    cmid: String(config.cmid || ''),
+                    action: 'logondevice',
+                    question: questionText(que),
+                    answer: currentAnswer(que),
+                    feedback: graderFeedback(que),
+                    attempt: String(thisAttempt),
+                    qubaid: ids.qubaid,
+                    slot: ids.slot,
+                    hint: hint
+                });
+                fetch(config.ajaxurl, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: body.toString()
+                }).catch(() => {
+                    return;
+                });
+            })
+            .catch(() => {
+                panel.textContent = strings.unavailable || '';
+            });
+    };
+
     const postHint = () => {
         btn.disabled = true;
         panel.classList.add('stackhinter-hint-show');
@@ -252,6 +359,9 @@ const attach = (config, que) => {
             body: body.toString()
         }).then((response) => response.json())
             .then((data) => {
+                if (data.ondevice) {
+                    return runOnDevice(data, thisAttempt);
+                }
                 if (data.policyrequired) {
                     showPolicy(data);
                 } else if (data.hint) {

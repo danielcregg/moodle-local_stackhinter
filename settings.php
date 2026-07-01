@@ -48,11 +48,28 @@ if ($hassiteconfig) {
         get_string('aibackend_desc', 'local_stackhinter'),
         'auto',
         [
-            'auto' => get_string('aibackend_auto', 'local_stackhinter'),
-            'core' => get_string('aibackend_core', 'local_stackhinter'),
-            'own'  => get_string('aibackend_own', 'local_stackhinter'),
+            'auto'     => get_string('aibackend_auto', 'local_stackhinter'),
+            'core'     => get_string('aibackend_core', 'local_stackhinter'),
+            'own'      => get_string('aibackend_own', 'local_stackhinter'),
+            'ondevice' => get_string('aibackend_ondevice', 'local_stackhinter'),
         ]
     ));
+
+    // On-device model, used only when the AI backend is "on-device". Runs entirely in the student's
+    // browser via WebLLM/WebGPU; no key and no external AI provider are involved.
+    $settings->add(new admin_setting_configselect(
+        'local_stackhinter/ondevicemodel',
+        get_string('ondevicemodel', 'local_stackhinter'),
+        get_string('ondevicemodel_desc', 'local_stackhinter'),
+        'gemma-2-2b-it-q4f16_1-MLC',
+        [
+            'gemma-2-2b-it-q4f16_1-MLC'        => 'Gemma 2 2B (recommended)',
+            'Llama-3.2-3B-Instruct-q4f16_1-MLC' => 'Llama 3.2 3B',
+        ]
+    ));
+
+    // Show the on-device model row only when the AI backend is "on-device".
+    $settings->hide_if('local_stackhinter/ondevicemodel', 'local_stackhinter/aibackend', 'neq', 'ondevice');
 
     $settings->add(new admin_setting_heading(
         'local_stackhinter/ownheading',

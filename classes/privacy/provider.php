@@ -32,8 +32,10 @@ use core_privacy\local\request\userlist;
 use core_privacy\local\request\writer;
 
 /**
- * Privacy provider: the plugin stores a per-user hint log (local_stackhinter_hints) and discloses the
- * question text, the student's answer and the grader feedback to the configured external AI provider.
+ * Privacy provider: the plugin stores a per-user hint log (local_stackhinter_hints) and, for the
+ * server-side AI backends, discloses the question text, the student's answer and the grader feedback to
+ * the configured external AI provider. The on-device backend sends nothing externally (the model runs in
+ * the student's browser); only the one-time model download leaves the browser.
  */
 class provider implements
     \core_privacy\local\metadata\provider,
@@ -58,6 +60,10 @@ class provider implements
             'timecreated' => 'privacy:metadata:hints:timecreated',
         ], 'privacy:metadata:hints');
 
+        // The external-provider disclosure below applies to the "own" and "core" AI backends only. With
+        // the on-device backend the model runs in the student's browser (WebGPU) and none of this data is
+        // sent to any external AI provider; only the model files are downloaded once from a public CDN,
+        // and that request contains no personal data. See the privacy:metadata:provider summary string.
         $collection->add_external_location_link('aiprovider', [
             'question'  => 'privacy:metadata:provider:question',
             'answer'    => 'privacy:metadata:provider:answer',

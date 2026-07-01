@@ -90,9 +90,41 @@ try {
         die();
     }
 
+    // Log a hint that was generated in the student's browser by the on-device backend. Guarded exactly
+    // like a normal hint (enabled, per-quiz opt-in, sesskey, capability, attempt ownership, ceiling — all
+    // already enforced above). Stores the browser-supplied hint text; never returns any grounding.
+    if ($action === 'logondevice') {
+        $hinttext = \local_stackhinter\postprocess::sanitize(
+            core_text::substr(required_param('hint', PARAM_RAW), 0, 2000)
+        );
+        $DB->insert_record('local_stackhinter_hints', (object) [
+            'userid' => $USER->id, 'cmid' => $cmid, 'attempt' => $attempt,
+            'question' => $question, 'answer' => $answer, 'feedback' => $feedback,
+            'hint' => $hinttext,
+            'provider' => 'ondevice:' . \local_stackhinter\ai_client::ondevice_model(),
+            'timecreated' => time(),
+        ]);
+        echo json_encode(['logged' => true]);
+        die();
+    }
+
     // Ground the hint in a CAS-verified diagnosis when we can resolve the live STACK attempt
     // (ownership is verified inside for_request; any failure falls back to feedback-only hinting).
     $grounding = \local_stackhinter\stack_grounding::for_request($cm, (int) $USER->id, $qubaid, $slot, $answer) ?? [];
+
+    // On-device backend: the model runs in the student's browser. Return ONLY the safe prompt
+    // (system + user, containing just the bounded CAS diagnosis class) and the model id; never the
+    // model answer. The generated hint is logged afterwards via the 'logondevice' action.
+    if (\local_stackhinter\ai_client::resolve_backend($context) === 'ondevice') {
+        $messages = \local_stackhinter\ai_client::build_messages($question, $answer, $feedback, $attempt, $grounding);
+        echo json_encode([
+            'ondevice' => true,
+            'system'   => $messages['system'],
+            'user'     => $messages['user'],
+            'model'    => \local_stackhinter\ai_client::ondevice_model(),
+        ]);
+        die();
+    }
 
     $hint = \local_stackhinter\ai_client::hint($question, $answer, $feedback, $attempt, $grounding, $context, (int) $USER->id);
 

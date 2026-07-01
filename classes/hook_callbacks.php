@@ -58,6 +58,8 @@ class hook_callbacks {
             'cmid'     => $cmid,
             'maxhints' => quiz_settings::get_maxhints($cmid),
             'label'    => get_string('hintbutton', 'local_stackhinter'),
+            // Public CDN for the on-device (WebLLM) model, loaded by native dynamic import in the browser.
+            'webllmurl' => 'https://esm.run/@mlc-ai/web-llm',
             'strings' => [
                 'thinking'    => get_string('hintthinking', 'local_stackhinter'),
                 'done'        => get_string('hintsdone', 'local_stackhinter'),
@@ -65,6 +67,9 @@ class hook_callbacks {
                 'prev'        => get_string('hintprev', 'local_stackhinter'),
                 'next'        => get_string('hintnext', 'local_stackhinter'),
                 'counter'     => get_string('hintcounter', 'local_stackhinter'),
+                'loading'     => get_string('ondeviceloading', 'local_stackhinter'),
+                'download'    => get_string('ondevicedownload', 'local_stackhinter'),
+                'nowebgpu'    => get_string('ondevicenowebgpu', 'local_stackhinter'),
             ],
         ];
 

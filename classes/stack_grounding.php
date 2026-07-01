@@ -148,8 +148,8 @@ class stack_grounding {
             if ($code === null || !isset(self::CLASSES[$code])) {
                 return null;
             }
-            // 'answer' is the teacher answer, kept SERVER-SIDE only (for the leak guard); it is never
-            // placed in the prompt or returned to the browser.
+            // The teacher answer is kept SERVER-SIDE only (for the leak guard); it is never placed in
+            // the prompt or returned to the browser.
             return ['class' => self::CLASSES[$code], 'answer' => $model];
         } catch (\Throwable $e) {
             debugging('local_stackhinter grounding failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
