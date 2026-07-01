@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $string['aibackend'] = 'AI backend';
-$string['aibackend_auto'] = 'Auto: Moodle\'s built-in AI if a provider is configured, otherwise this plugin\'s own provider';
+$string['aibackend_auto'] = 'Auto (recommended): Moodle\'s built-in AI if the site has it, else this plugin\'s own provider if a key is set, else on-device in the student\'s browser (no key needed)';
 $string['aibackend_core'] = 'Moodle\'s built-in AI (reuses the site\'s configured provider and key)';
-$string['aibackend_desc'] = 'Where hints are generated. "Moodle\'s built-in AI" reuses a provider configured under Site administration > AI, so no separate key is needed and Moodle\'s AI policy and logging apply. "This plugin\'s own provider" uses the provider, model and key set below. "Auto" prefers Moodle\'s AI when a core provider is available, otherwise uses this plugin\'s own provider.';
+$string['aibackend_desc'] = 'Where hints are generated. "Moodle\'s built-in AI" reuses a provider configured under Site administration > AI, so no separate key is needed and Moodle\'s AI policy and logging apply. "This plugin\'s own provider" uses the provider, model and key set below. "On-device" runs a small model (gemma-2-2b) entirely in the student\'s browser using WebGPU: no key, no external AI provider, and nothing about the answer leaves the browser; the browser downloads the model once (about 1.6 GB) on the first hint and then caches it, and a modern browser with WebGPU (recent Chrome or Edge, or Safari 18+) is required. "Auto" (the default) needs no configuration: it uses Moodle\'s built-in AI when available, otherwise this plugin\'s own provider when a key is set, otherwise on-device — so the plugin works as soon as it is enabled. Configure an own provider or Moodle\'s built-in AI to also cover students on browsers without WebGPU.';
 $string['aibackend_ondevice'] = 'On-device AI (runs in the student\'s browser; no key, no external provider)';
 $string['aibackend_own'] = 'This plugin\'s own provider and key (set below)';
 $string['aiempty'] = 'The AI returned an empty response.';
@@ -37,7 +37,7 @@ $string['aireasoningmodel'] = 'The model returned only its reasoning and no hint
 $string['apikey'] = 'AI API key';
 $string['apikey_desc'] = 'Stored server-side and never sent to the browser; the plugin calls the provider from the server. Need a free key? See the note under "This plugin\'s own AI provider" above.';
 $string['enabled'] = 'Enable STACK AI Hinter';
-$string['enabled_desc'] = 'Make STACK AI Hinter available on this site. When on, teachers can switch the hint button on per quiz (off by default) in each quiz\'s settings, so it never appears on a quiz nobody opted in, including exams. Stays off until you also configure an AI backend (a provider, model and API key below, or Moodle\'s built-in AI).';
+$string['enabled_desc'] = 'Make STACK AI Hinter available on this site. When on, teachers can switch the hint button on per quiz (off by default) in each quiz\'s settings, so it never appears on a quiz nobody opted in, including exams. With the default "Auto" backend it works with no further setup: hints run on-device in the student\'s browser (a WebGPU browser is required) unless you configure Moodle\'s built-in AI or an own provider below.';
 $string['fallback_constant'] = 'Your answer looks off by a constant term. Check whether you have added or dropped one.';
 $string['fallback_equivalent'] = 'Your answer has the right value but not in the form the question asks for. Try rewriting it in the required form.';
 $string['fallback_generic'] = 'Re-read the question and check your working step by step.';
@@ -60,9 +60,7 @@ $string['nomodel'] = 'No AI model is configured for STACK AI Hinter.';
 $string['noprovider'] = 'No valid AI provider is configured for STACK AI Hinter.';
 $string['ondevicedownload'] = 'Downloading the on-device model (one time)… {$a}%';
 $string['ondeviceloading'] = 'Starting the on-device model…';
-$string['ondevicemodel'] = 'On-device model';
-$string['ondevicemodel_desc'] = 'The AI model that runs entirely in the student\'s browser using WebGPU when the AI backend is set to on-device. Nothing is sent to an external AI provider; the browser downloads the model once from a public CDN and caches it. Gemma 2 2B is recommended (smallest, fastest); Llama 3.2 3B is a higher-quality alternative that downloads more data. A WebGPU-capable browser is required.';
-$string['ondevicenowebgpu'] = 'On-device hints need a browser with WebGPU. Please update your browser or ask your teacher to enable a server-side AI backend.';
+$string['ondevicenowebgpu'] = 'On-device hints need a browser with WebGPU (recent Chrome or Edge, or Safari 18+). Please update your browser, or ask your teacher to enable a server-side AI provider for hints.';
 $string['ownheading'] = 'This plugin\'s own AI provider';
 $string['ownheading_desc'] = 'Used when the AI backend is "This plugin\'s own provider", or "Auto" with no core AI provider configured. Ignored when Moodle\'s built-in AI is used.<br><br><b>Fastest free setup (about 2 minutes, no cost):</b><br>1. Create a free API key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.<br>2. Set <i>AI provider</i> to <i>OpenRouter</i>, paste the key into <i>AI API key</i>, and set <i>Model</i> to any model id ending in <code>:free</code> from the <a href="https://openrouter.ai/models?max_price=0" target="_blank" rel="noopener">free models list</a> (for example <code>meta-llama/llama-3.3-70b-instruct:free</code>).<br>3. Tick <i>Enable STACK AI Hinter</i> above.<br>Google Gemini works the same way with a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (provider <i>Google Gemini</i>, model <code>gemini-2.5-flash</code>).';
 $string['perquizenable'] = 'Enable STACK AI Hinter on this quiz';

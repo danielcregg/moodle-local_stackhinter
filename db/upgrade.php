@@ -43,5 +43,12 @@ function xmldb_local_stackhinter_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026062902, 'local', 'stackhinter');
     }
 
+    if ($oldversion < 2026070107) {
+        // The on-device model is no longer configurable (fixed to the validated gemma-2-2b); drop the
+        // orphaned setting. On-device sites keep working via the fixed model.
+        unset_config('ondevicemodel', 'local_stackhinter');
+        upgrade_plugin_savepoint(true, 2026070107, 'local', 'stackhinter');
+    }
+
     return true;
 }

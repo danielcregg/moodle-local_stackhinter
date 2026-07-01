@@ -67,11 +67,15 @@ class ai_client {
         "but the question wants it multiplied out; what do you get when each term multiplies each term?\"";
 
     /**
-     * Resolve which AI backend handles a request: 'core' (Moodle's AI subsystem) or 'own' (this
-     * plugin's configured provider/key).
+     * Resolve which AI backend handles a request: 'core' (Moodle's AI subsystem), 'own' (this plugin's
+     * configured provider/key) or 'ondevice' (a model in the student's browser).
      *
-     * @param \context|null $context The request context (core needs one; null forces 'own' in auto).
-     * @return string 'core' or 'own'.
+     * In 'auto' (the default) the plugin works with zero configuration: it uses Moodle's core AI when the
+     * site has it configured, else this plugin's own provider when a key is set, else the on-device model
+     * — so a fresh install with no key still gives hints (in a WebGPU browser).
+     *
+     * @param \context|null $context The request context (core needs one).
+     * @return string 'core', 'own' or 'ondevice'.
      */
     public static function resolve_backend(?\context $context): string {
         $backend = (string) get_config('local_stackhinter', 'aibackend');
@@ -79,19 +83,39 @@ class ai_client {
         if (in_array($backend, ['core', 'own', 'ondevice'], true)) {
             return $backend;
         }
-        // Auto (default): prefer core only when it is actually available, else this plugin's provider.
-        return ($context !== null && core_ai::available()) ? 'core' : 'own';
+        // Auto: core when available, else this plugin's own provider when fully configured, else the
+        // zero-config on-device model.
+        if ($context !== null && core_ai::available()) {
+            return 'core';
+        }
+        return self::own_configured() ? 'own' : 'ondevice';
+    }
+
+    /**
+     * Whether this plugin's own provider is fully configured (provider, model and key all present).
+     *
+     * @return bool True if the own-provider path can run.
+     */
+    private static function own_configured(): bool {
+        $provider = (string) get_config('local_stackhinter', 'provider');
+        return $provider !== '' && isset(self::PROVIDERS[$provider])
+            && trim((string) get_config('local_stackhinter', 'model')) !== ''
+            && trim((string) get_config('local_stackhinter', 'apikey')) !== '';
     }
 
     /**
      * A short label of the backend that would handle a request, for logging.
      *
      * @param \context|null $context The request context.
-     * @return string 'core_ai' or 'own:<provider>'.
+     * @return string 'core_ai', 'ondevice:<model>' or 'own:<provider>'.
      */
     public static function backend_label(?\context $context): string {
-        if (self::resolve_backend($context) === 'core') {
+        $backend = self::resolve_backend($context);
+        if ($backend === 'core') {
             return 'core_ai';
+        }
+        if ($backend === 'ondevice') {
+            return 'ondevice:' . self::ondevice_model();
         }
         return 'own:' . (string) get_config('local_stackhinter', 'provider');
     }
@@ -261,13 +285,14 @@ class ai_client {
     }
 
     /**
-     * The configured on-device (in-browser) model id, defaulting to gemma-2-2b.
+     * The on-device (in-browser) model id. Fixed to gemma-2-2b: it is the only small model that leaked
+     * the answer 0% of the time in evaluation, so it is safe to run in the browser where the server-side
+     * leak-guard cannot run. It is deliberately not configurable.
      *
      * @return string A WebLLM model id.
      */
     public static function ondevice_model(): string {
-        $m = trim((string) get_config('local_stackhinter', 'ondevicemodel'));
-        return $m !== '' ? $m : 'gemma-2-2b-it-q4f16_1-MLC';
+        return 'gemma-2-2b-it-q4f16_1-MLC';
     }
 
     /**

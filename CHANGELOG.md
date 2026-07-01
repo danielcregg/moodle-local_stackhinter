@@ -12,12 +12,21 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
 ## [Unreleased]
 
 ### Added
-- **On-device (in-browser) AI backend.** A new "On-device" AI backend runs a small model
-  (`gemma-2-2b` by default, `Llama-3.2-3B` as a backup) entirely in the student's browser via
-  WebLLM/WebGPU — no API key, and no answer data leaves the browser. The server returns only the
-  bounded, CAS-grounded prompt; the generated hint is logged back via a `logondevice` action.
+- **Zero-config on-device (in-browser) AI backend.** Hints can run on a small model (`gemma-2-2b`)
+  entirely in the student's browser via WebLLM/WebGPU — no API key, and no answer data leaves the browser
+  (the server returns only the bounded, CAS-grounded prompt; the hint is logged back via a `logondevice`
+  action). The default **"Auto"** backend now falls back to on-device when neither Moodle's built-in AI nor
+  an own provider is configured, so the plugin gives hints as soon as it is enabled — no key needed. The
+  browser downloads gemma-2-2b (~1.6 GB) once on the first hint and caches it; a WebGPU browser (recent
+  Chrome/Edge, or Safari 18+) is required, so configure a server-side backend to also cover older browsers.
 - **Few-shot prompting, tight decoding, and an output pipeline** (`classes/postprocess.php`) that
   sanitises every backend's hint and applies a server-side answer-leak guard.
+
+### Changed
+- **The on-device model is fixed to gemma-2-2b and no longer configurable.** The model picker (and the
+  `Llama-3.2-3B` option) was removed: evaluation showed gemma-2-2b is the only small model that never
+  leaked the answer, so it is the only one safe to run in the browser (where the server-side leak-guard
+  cannot run). Llama-3.2-3B leaked 2–4% and Gemma 4 / other reasoning models were worse.
 
 ### Fixed
 - **On-device model now actually loads in the browser.** Moodle's AMD build (Babel +

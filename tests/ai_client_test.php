@@ -103,26 +103,42 @@ final class ai_client_test extends \advanced_testcase {
     }
 
     /**
-     * The AI backend resolves to the administrator's explicit choice; "auto" with no request context
-     * falls back to this plugin's own provider (core AI needs a real context to be selectable).
+     * The AI backend resolves to the administrator's explicit choice; "auto" uses this plugin's own
+     * provider when it is fully configured, otherwise falls back to the zero-config on-device model (core
+     * AI needs a real context to be selectable, which is absent here).
      *
      * @return void
      */
     public function test_resolve_backend(): void {
         $this->resetAfterTest();
 
+        // Explicit choices are honoured.
         set_config('aibackend', 'own', 'local_stackhinter');
         $this->assertSame('own', ai_client::resolve_backend(null));
 
         set_config('aibackend', 'core', 'local_stackhinter');
         $this->assertSame('core', ai_client::resolve_backend(null));
 
+        set_config('aibackend', 'ondevice', 'local_stackhinter');
+        $this->assertSame('ondevice', ai_client::resolve_backend(null));
+
+        // Auto with no own provider configured falls back to the on-device model (zero config).
         set_config('aibackend', 'auto', 'local_stackhinter');
+        set_config('provider', '', 'local_stackhinter');
+        set_config('model', '', 'local_stackhinter');
+        set_config('apikey', '', 'local_stackhinter');
+        $this->assertSame('ondevice', ai_client::resolve_backend(null));
+
+        // Auto with a fully configured own provider uses it.
+        set_config('provider', 'openai', 'local_stackhinter');
+        set_config('model', 'gpt-4o-mini', 'local_stackhinter');
+        set_config('apikey', 'sk-test', 'local_stackhinter');
         $this->assertSame('own', ai_client::resolve_backend(null));
     }
 
     /**
-     * The backend label recorded against each hint names either the core subsystem or the own provider.
+     * The backend label recorded against each hint names the core subsystem, the on-device model, or the
+     * own provider.
      *
      * @return void
      */
@@ -135,5 +151,8 @@ final class ai_client_test extends \advanced_testcase {
 
         set_config('aibackend', 'core', 'local_stackhinter');
         $this->assertSame('core_ai', ai_client::backend_label(null));
+
+        set_config('aibackend', 'ondevice', 'local_stackhinter');
+        $this->assertSame('ondevice:gemma-2-2b-it-q4f16_1-MLC', ai_client::backend_label(null));
     }
 }

@@ -30,12 +30,14 @@ sequenceDiagram
 - **Moodle 4.5 LTS** or later (developed and tested on 4.5; uses the Hooks API).
 - The **STACK question type** (`qtype_stack`) — the hinter targets STACK questions and declares
   `qtype_stack` as a dependency.
-- An **AI backend**, one of: Moodle's built-in **core AI** (configure a provider under *Site
-  administration → AI* — no separate key needed); this plugin's own API key for one external
-  provider (OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, OpenRouter, Groq, Mistral, Cerebras,
-  or an OpenAI-compatible gateway — AWS Bedrock additionally takes an AWS region); or **on-device AI**,
-  which runs a small model in the student's browser with **no key and no external provider** (a
-  WebGPU-capable browser is required — see [On-device AI](#on-device-ai-in-the-browser)).
+- **No AI key is required by default.** With the default *Auto* backend the plugin runs a small model
+  (gemma-2-2b) **on-device in the student's browser** (WebGPU) — no key, no external provider, and no
+  answer data leaves the browser (see [On-device AI](#on-device-ai-in-the-browser)). A recent
+  WebGPU-capable browser (Chrome/Edge, or Safari 18+) is required. To run hints server-side instead (or to
+  cover browsers without WebGPU), configure Moodle's built-in **core AI** (a provider under *Site
+  administration → AI* — no separate key needed) or this plugin's own API key for one external provider
+  (OpenAI, Anthropic Claude, Google Gemini, AWS Bedrock, OpenRouter, Groq, Mistral, Cerebras, or an
+  OpenAI-compatible gateway — AWS Bedrock additionally takes an AWS region).
 
 ## Install
 
@@ -46,20 +48,25 @@ Site administration → Plugins → Install plugins → search for *STACK AI Hin
 Copy this directory to `<moodleroot>/local/stackhinter` (the folder **must** be named `stackhinter`), then
 visit *Site administration → Notifications*, or run `php admin/cli/upgrade.php --non-interactive`.
 
-## Quick start: free AI in about 2 minutes
+## Quick start
 
-The plugin ships **inert** (disabled, with no key). Two no-cost ways to make it work:
+The plugin **works out of the box with no API key**: install it, tick **Enable STACK AI Hinter**, and turn
+hints on for a quiz in its *Settings → STACK AI Hinter*. With the default **Auto** backend, hints run
+**on-device in each student's browser** — the browser downloads gemma-2-2b (~1.6 GB) once on the first hint
+and caches it, a recent **WebGPU** browser (Chrome/Edge, or Safari 18+) is required, and nothing about the
+answer leaves the browser.
+
+To run hints **server-side instead** (e.g. to cover older browsers or avoid the per-student download),
+configure one of these — the **Auto** backend then uses it automatically:
 
 **Option A: a free API key (fastest for a single site).**
 1. Create a free key at [openrouter.ai/keys](https://openrouter.ai/keys), or use Google's [Gemini free tier](https://aistudio.google.com/apikey).
 2. In *Site administration → Plugins → Local plugins → STACK AI Hinter*, set **AI provider** to **OpenRouter**, paste the key into **AI API key**, and set **Model** to a current model id ending in `:free` from the [free models list](https://openrouter.ai/models?max_price=0) (for example `meta-llama/llama-3.3-70b-instruct:free`). With Gemini instead, use provider **Google Gemini** and model `gemini-2.5-flash`.
 3. Tick **Enable STACK AI Hinter**, then turn hints on for a quiz in its *Settings → STACK AI Hinter*.
 
-**Option B: reuse Moodle's built-in AI (no separate key).** If an administrator has configured an AI provider under *Site administration → AI*, leave **AI backend** on **Auto**: the hinter uses Moodle's core AI, inheriting its AI policy and logging. This is the cleanest path for an institution that already runs AI centrally.
+**Option B: reuse Moodle's built-in AI (no separate key).** If an administrator has configured an AI provider under *Site administration → AI*, the **Auto** backend uses Moodle's core AI automatically, inheriting its AI policy and logging. This is the cleanest path for an institution that already runs AI centrally.
 
-**Option C: on-device AI (no key, nothing leaves the browser).** Set **AI backend** to **On-device AI**. A small model runs in each student's browser via WebGPU, so no API key or external provider is involved and no answer data is sent anywhere. The browser downloads the model once (a few hundred MB) from a public CDN and caches it; a recent, WebGPU-capable browser is required. See [On-device AI](#on-device-ai-in-the-browser).
-
-> With the server-side backends (Options A and B), each hint sends only the question text, the student's current answer, the grader feedback and a one-word CAS diagnosis; the model answer is never sent. Pick a provider whose data-handling terms suit your institution. (Option C sends nothing to any AI provider.)
+> With the server-side backends (Options A and B), each hint sends only the question text, the student's current answer, the grader feedback and a one-word CAS diagnosis; the model answer is never sent. Pick a provider whose data-handling terms suit your institution. (The default on-device backend sends nothing to any AI provider.)
 
 ## Configure
 
@@ -69,8 +76,7 @@ and does nothing until you:
 | Setting | Description |
 |---|---|
 | **Enable STACK AI Hinter** | Site master switch (off by default). When on, teachers turn hints on **per quiz** (off by default) in each quiz's settings — so they never appear on a quiz nobody opted in, including exams. |
-| **AI backend** | Moodle's built-in core AI, this plugin's own provider/key, **On-device AI** (runs in the student's browser via WebGPU — no key, no external provider), or *Auto* (prefers core when available). |
-| **On-device model** | Which browser model to run when the backend is *On-device AI*: **Gemma 2 2B** (recommended) or **Llama 3.2 3B**. Shown only when the on-device backend is selected. |
+| **AI backend** | *Auto* (default), Moodle's built-in core AI, this plugin's own provider/key, or **On-device AI**. *Auto* needs no configuration: it uses core AI if the site has it, else an own provider if a key is set, else **on-device** (gemma-2-2b, in the student's browser via WebGPU — no key, no external provider). The on-device model is fixed to gemma-2-2b (the only small model that never leaked the answer in testing) and is not configurable. |
 | **AI provider** | Which external service generates hints (used by the own-provider backend). |
 | **Model** | The model id, e.g. `gpt-4o-mini`, `gemini-2.5-flash`, `claude-3-5-haiku`. |
 | **AI API key** | Stored server-side, never sent to the browser. |
@@ -107,23 +113,21 @@ own attempt first.
 
 ## On-device AI (in the browser)
 
-Instead of a server-side provider, the hinter can run a small language model **entirely in the student's
-browser** using WebGPU (via [WebLLM](https://github.com/mlc-ai/web-llm)). Set **AI backend** to
-**On-device AI** in the plugin settings. In this mode:
+The hinter can run a small language model **entirely in the student's browser** using WebGPU (via
+[WebLLM](https://github.com/mlc-ai/web-llm)). This is the **default** with the *Auto* backend when no
+server-side AI is configured, so the plugin works with no key; you can also select **On-device AI**
+explicitly. In this mode:
 
 - **No API key and no external AI provider are involved.** The question text, the student's answer, the
   grader feedback and the one-word CAS diagnosis are processed locally in the browser and are **never**
   sent to any external AI service. The only network request the model makes is a **one-time download** of
   the model weights from a public CDN (cached by the browser afterwards); that request carries no personal
   data.
-- **Model choice** (the *On-device model* setting):
-  - **Gemma 2 2B** (`gemma-2-2b-it-q4f16_1-MLC`) — the default and recommendation: the smallest and
-    fastest, with the best small-model hints in our evaluation.
-  - **Llama 3.2 3B** (`Llama-3.2-3B-Instruct-q4f16_1-MLC`) — a higher-quality alternative that downloads
-    and runs more data.
-
-  "Thinking"/reasoning models are deliberately not offered: they tend to output their reasoning and can
-  reveal the answer.
+- **The model is gemma-2-2b** (`gemma-2-2b-it-q4f16_1-MLC`, ~1.6 GB, downloaded once on the first hint and
+  cached). It is fixed and not configurable: in evaluation it was the only small model that **never leaked
+  the answer**, which matters because the server-side leak-guard cannot run in the browser. Larger and
+  "thinking"/reasoning models (Llama-3.2-3B, Gemma 4, Qwen3, …) leaked the answer and are deliberately not
+  offered.
 - **Requirements:** a recent, **WebGPU-capable** browser (current Chrome, Edge, or equivalent) with enough
   memory for the model. If a student's browser has no WebGPU, the hint button reports that on-device hints
   are unavailable and no hint is consumed; an administrator can instead choose a server-side backend.
