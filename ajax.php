@@ -128,8 +128,8 @@ try {
         // Only meaningful in the guarded on-device flow; refuse otherwise so this endpoint is not an
         // extra surface on sites not running that mode. (With the gates above it is in any case no
         // cheaper to call than the 'hint' action itself - one Maxima classification, no AI call.)
-        if (\local_stackhinter\ai_client::resolve_backend($context) !== 'ondevice'
-                || !get_config('local_stackhinter', 'ondeviceguard')) {
+        $guardedmode = \local_stackhinter\ai_client::resolve_backend($context) === 'ondevice';
+        if (!$guardedmode || !get_config('local_stackhinter', 'ondeviceguard')) {
             echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
             die();
         }
