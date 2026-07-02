@@ -37,6 +37,18 @@ All notable changes to **local_stackhinter** are documented in this file. The fo
   the browser (where the server-side leak-guard cannot run). Llama-3.2-3B leaked 2–4% and Gemma 4 / other
   reasoning models were worse.
 
+### Added
+- **On-device hints are now checked by the server before they are shown (on by default).** The browser sends
+  each freshly generated hint back to the server, which holds the correct answer (it never leaves the server)
+  and checks the hint against it. A hint that states the answer is rejected: the model is asked to rewrite it
+  (up to two retries, using a note that never names the answer), and if it still leaks, a safe diagnosis-based
+  hint is shown instead. In our evaluation this retry policy resolved about 92% of observed leaks with a fresh
+  clean hint and the remainder fell back safely, so no literal answer statement is displayed whenever the CAS
+  diagnosis is available (on the rare questions where no diagnosis can be computed there is no answer to check
+  against, and the hint is shown as before, marked unchecked). The check adds one quick round-trip per hint and
+  fails closed if the server cannot be reached; a new site setting can disable it. Approved hints are logged by
+  the check itself.
+
 ### Fixed
 - **On-device hints now refuse software-emulated WebGPU instead of hanging.** Some browsers expose WebGPU
   through a software fallback adapter (SwiftShader) with no real GPU behind it; on such machines the on-device

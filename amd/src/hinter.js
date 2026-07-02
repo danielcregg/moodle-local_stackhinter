@@ -296,7 +296,11 @@ const attach = (config, que) => {
     };
 
     // Run the model in the student's browser, then commit and log the hint exactly like a server hint.
-    const runOnDevice = (data, thisAttempt) => {
+    // `fields` carries the question/answer/feedback/usage ids CAPTURED AT REQUEST TIME: the student may
+    // edit their answer during the 10-60s of local generation, and the check/log must describe the
+    // attempt the hint was actually generated for (re-reading the DOM here could also make grounding
+    // fail at check time and skip the guard).
+    const runOnDevice = (data, thisAttempt, fields) => {
         // No WebGPU means the model cannot run on-device; show the message and do not consume a hint.
         if (!navigator.gpu) {
             panel.textContent = strings.nowebgpu || '';
@@ -314,17 +318,16 @@ const attach = (config, que) => {
         // Log a browser-generated hint server-side (fire-and-forget; the ceiling and other guards are
         // enforced there). Kept out of the then() chain so promises are not nested.
         const logOnDevice = (hint) => {
-            const ids = qubaSlot(que);
             const body = new URLSearchParams({
                 sesskey: config.sesskey,
                 cmid: String(config.cmid || ''),
                 action: 'logondevice',
-                question: questionText(que),
-                answer: currentAnswer(que),
-                feedback: graderFeedback(que),
+                question: fields.question,
+                answer: fields.answer,
+                feedback: fields.feedback,
                 attempt: String(thisAttempt),
-                qubaid: ids.qubaid,
-                slot: ids.slot,
+                qubaid: fields.qubaid,
+                slot: fields.slot,
                 hint: hint
             });
             fetch(config.ajaxurl, {
@@ -334,6 +337,69 @@ const attach = (config, que) => {
             }).catch(() => {
                 // Ignore logging failures; the hint is already shown.
             });
+        };
+
+        // One local generation: fold system+user into a single user message (Gemma 2 has no system
+        // role), optionally appending the server's content-free retry note, and sanitize the output.
+        const generateOnce = (engine, retrynote) => engine.chat.completions.create({
+            messages: [{
+                role: 'user',
+                content: data.system + '\n\n' + data.user + (retrynote ? '\n\n' + retrynote : '')
+            }],
+            temperature: 0.4,
+            // eslint-disable-next-line camelcase
+            max_tokens: 160
+        }).then((completion) => {
+            const raw = completion && completion.choices && completion.choices[0]
+                && completion.choices[0].message ? completion.choices[0].message.content : '';
+            return sanitizeHint(raw);
+        });
+
+        // Guarded flow: send the candidate hint to the server, which holds the teacher answer and runs
+        // the leak guard BEFORE anything is displayed. The server approves (and logs) the hint, asks
+        // for a rewrite via a content-free note, or supplies the safe diagnosis fallback on the final
+        // attempt. The answer itself never reaches the browser.
+        const checkOnDevice = (hint, final) => {
+            const body = new URLSearchParams({
+                sesskey: config.sesskey,
+                cmid: String(config.cmid || ''),
+                action: 'checkondevice',
+                question: fields.question,
+                answer: fields.answer,
+                feedback: fields.feedback,
+                attempt: String(thisAttempt),
+                qubaid: fields.qubaid,
+                slot: fields.slot,
+                hint: hint,
+                'final': final ? '1' : '0'
+            });
+            return fetch(config.ajaxurl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: body.toString()
+            }).then((response) => response.json());
+        };
+
+        // Generate, check, and retry up to retrymax times; defined at this scope (recursion, not
+        // nesting) so the promise chain stays flat for eslint-plugin-promise, like generator.js.
+        const guardedAttempt = (engine, retriesused, retrynote) => {
+            const final = retriesused >= (data.retrymax || 2);
+            return generateOnce(engine, retrynote)
+                .then((hint) => {
+                    panel.textContent = strings.checking || strings.thinking || '';
+                    return checkOnDevice(hint || '', final);
+                })
+                .then((resp) => {
+                    if (resp.hint) {
+                        // Approved (or the safe fallback) and already logged server-side.
+                        return resp.hint;
+                    }
+                    if (resp.retrynote && !final) {
+                        panel.textContent = strings.thinking || '';
+                        return guardedAttempt(engine, retriesused + 1, resp.retrynote);
+                    }
+                    throw new Error('stackhinter:unavailable'); // Fail closed: never show unchecked text.
+                });
         };
 
         return navigator.gpu.requestAdapter()
@@ -349,17 +415,8 @@ const attach = (config, que) => {
                 }
                 return getEngine(config, data.model, onProgress);
             })
-            .then((engine) => engine.chat.completions.create({
-                // Gemma 2 has no system role, so fold the system and user prompts into one user message.
-                messages: [{role: 'user', content: data.system + '\n\n' + data.user}],
-                temperature: 0.4,
-                // eslint-disable-next-line camelcase
-                max_tokens: 160
-            }))
-            .then((completion) => {
-                const raw = completion && completion.choices && completion.choices[0]
-                    && completion.choices[0].message ? completion.choices[0].message.content : '';
-                const hint = sanitizeHint(raw);
+            .then((engine) => (data.guard ? guardedAttempt(engine, 0, '') : generateOnce(engine, '')))
+            .then((hint) => {
                 if (!hint) {
                     panel.textContent = strings.unavailable || '';
                     return null;
@@ -370,7 +427,10 @@ const attach = (config, que) => {
                 state.viewing = state.hints.length - 1;
                 state.capped = false;
                 render();
-                logOnDevice(hint);
+                if (!data.guard) {
+                    // Guarded hints were already logged server-side by the check itself.
+                    logOnDevice(hint);
+                }
                 return hint;
             })
             .catch((err) => {
@@ -387,15 +447,24 @@ const attach = (config, que) => {
         // returned: a policy prompt or a failure must not consume the student's hint quota.
         const thisAttempt = state.attempt + 1;
         const ids = qubaSlot(que);
-        const body = new URLSearchParams({
-            sesskey: config.sesskey,
-            cmid: String(config.cmid || ''),
+        // Captured once: the on-device flow reuses these exact values for its check/log calls, so a
+        // mid-generation edit to the answer box cannot change what the hint is checked against.
+        const fields = {
             question: questionText(que),
             answer: currentAnswer(que),
             feedback: graderFeedback(que),
-            attempt: String(thisAttempt),
             qubaid: ids.qubaid,
             slot: ids.slot
+        };
+        const body = new URLSearchParams({
+            sesskey: config.sesskey,
+            cmid: String(config.cmid || ''),
+            question: fields.question,
+            answer: fields.answer,
+            feedback: fields.feedback,
+            attempt: String(thisAttempt),
+            qubaid: fields.qubaid,
+            slot: fields.slot
         });
         return fetch(config.ajaxurl, {
             method: 'POST',
@@ -404,7 +473,7 @@ const attach = (config, que) => {
         }).then((response) => response.json())
             .then((data) => {
                 if (data.ondevice) {
-                    return runOnDevice(data, thisAttempt);
+                    return runOnDevice(data, thisAttempt, fields);
                 }
                 if (data.policyrequired) {
                     showPolicy(data);

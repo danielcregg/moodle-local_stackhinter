@@ -58,9 +58,13 @@ $string['model_desc'] = 'Model id for the chosen provider, for example gpt-4o-mi
 $string['nokey'] = 'No AI API key is configured for STACK AI Hinter.';
 $string['nomodel'] = 'No AI model is configured for STACK AI Hinter.';
 $string['noprovider'] = 'No valid AI provider is configured for STACK AI Hinter.';
+$string['ondevicechecking'] = 'Checking the hint…';
 $string['ondevicedownload'] = 'Downloading the on-device model (one time)… {$a}%';
+$string['ondeviceguard'] = 'Check on-device hints on the server before display';
+$string['ondeviceguard_desc'] = 'Before an on-device hint is shown, the browser sends it back to this server, which checks it against the correct answer (the answer itself never leaves the server). A hint that states the answer is rejected: the browser is asked to rewrite it (up to two retries), and if it still leaks, a safe diagnosis-based hint is shown instead. This adds one quick round-trip per hint; if the server cannot be reached for the check, the hint is not shown (fail closed).';
 $string['ondeviceloading'] = 'Starting the on-device model…';
 $string['ondevicenowebgpu'] = 'On-device hints need a browser with WebGPU (recent Chrome or Edge, or Safari 18+). Please update your browser, or ask your teacher to enable a server-side AI provider for hints.';
+$string['ondeviceretrynote'] = 'Your previous hint revealed the final answer. Rewrite it as a nudge that contains no final value at all.';
 $string['ownheading'] = 'This plugin\'s own AI provider';
 $string['ownheading_desc'] = 'Used when the AI backend is "This plugin\'s own provider", or "Auto" with no core AI provider configured. Ignored when Moodle\'s built-in AI is used.<br><br><b>Fastest free setup (about 2 minutes, no cost):</b><br>1. Create a free API key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.<br>2. Set <i>AI provider</i> to <i>OpenRouter</i>, paste the key into <i>AI API key</i>, and set <i>Model</i> to any model id ending in <code>:free</code> from the <a href="https://openrouter.ai/models?max_price=0" target="_blank" rel="noopener">free models list</a> (for example <code>meta-llama/llama-3.3-70b-instruct:free</code>).<br>3. Tick <i>Enable STACK AI Hinter</i> above.<br>Google Gemini works the same way with a free key from <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> (provider <i>Google Gemini</i>, model <code>gemini-2.5-flash</code>).';
 $string['perquizenable'] = 'Enable STACK AI Hinter on this quiz';

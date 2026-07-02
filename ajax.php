@@ -119,9 +119,55 @@ try {
     // (ownership is verified inside for_request; any failure falls back to feedback-only hinting).
     $grounding = \local_stackhinter\stack_grounding::for_request($cm, (int) $USER->id, $qubaid, $slot, $answer) ?? [];
 
+    // Check a browser-generated hint against the server-side leak guard BEFORE it is displayed (the
+    // guarded on-device flow). The teacher answer stays server-side: the guard runs here, on the
+    // candidate text. Outcomes: approve (and log) the hint; ask the browser to retry with a
+    // content-free note (never naming the leaked value, which would itself leak); or, on the final
+    // attempt, substitute and log the safe diagnosis-based fallback that guard() returns.
+    if ($action === 'checkondevice') {
+        // Only meaningful in the guarded on-device flow; refuse otherwise so this endpoint is not an
+        // extra surface on sites not running that mode. (With the gates above it is in any case no
+        // cheaper to call than the 'hint' action itself - one Maxima classification, no AI call.)
+        if (\local_stackhinter\ai_client::resolve_backend($context) !== 'ondevice'
+                || !get_config('local_stackhinter', 'ondeviceguard')) {
+            echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
+            die();
+        }
+        $candidate = \local_stackhinter\postprocess::sanitize(
+            core_text::substr(required_param('hint', PARAM_RAW), 0, 2000)
+        );
+        $final   = optional_param('final', 0, PARAM_INT) === 1;
+        $checked = ($grounding['answer'] ?? '') !== '';
+        $safe    = ($checked && $candidate !== '')
+            ? \local_stackhinter\postprocess::guard($candidate, $grounding) : $candidate;
+        $leaked  = ($safe !== $candidate);
+        if (!$final && ($leaked || $candidate === '')) {
+            // Retry: the note tells the model THAT it revealed the answer, never WHAT the answer was.
+            echo json_encode(['leak' => $leaked,
+                'retrynote' => get_string('ondeviceretrynote', 'local_stackhinter')]);
+            die();
+        }
+        $show = $leaked ? $safe : $candidate;
+        if ($show === '') {
+            echo json_encode(['error' => get_string('hinttemporary', 'local_stackhinter')]);
+            die();
+        }
+        $DB->insert_record('local_stackhinter_hints', (object) [
+            'userid' => $USER->id, 'cmid' => $cmid, 'attempt' => $attempt,
+            'question' => $question, 'answer' => $answer, 'feedback' => $feedback,
+            'hint' => $show,
+            'provider' => 'ondevice:' . \local_stackhinter\ai_client::ondevice_model()
+                . ($leaked ? ':guarded' : ''),
+            'timecreated' => time(),
+        ]);
+        echo json_encode(['hint' => $show, 'checked' => $checked, 'guarded' => $leaked]);
+        die();
+    }
+
     // On-device backend: the model runs in the student's browser. Return ONLY the safe prompt
     // (system + user, containing just the bounded CAS diagnosis class) and the model id; never the
-    // model answer. The generated hint is logged afterwards via the 'logondevice' action.
+    // model answer. In the guarded flow the browser posts the hint back to 'checkondevice' BEFORE
+    // showing it; otherwise it is logged afterwards via the 'logondevice' action.
     if (\local_stackhinter\ai_client::resolve_backend($context) === 'ondevice') {
         $messages = \local_stackhinter\ai_client::build_messages($question, $answer, $feedback, $attempt, $grounding);
         echo json_encode([
@@ -129,6 +175,8 @@ try {
             'system'   => $messages['system'],
             'user'     => $messages['user'],
             'model'    => \local_stackhinter\ai_client::ondevice_model(),
+            'guard'    => (bool) get_config('local_stackhinter', 'ondeviceguard'),
+            'retrymax' => 2,
         ]);
         die();
     }

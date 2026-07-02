@@ -28,7 +28,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component    = 'local_stackhinter';
-$plugin->version      = 2026070114;
+$plugin->version      = 2026070115;
 $plugin->requires     = 2024100700;             // Moodle 4.5 (LTS) — uses the Hooks API.
 $plugin->supported    = [405, 405];             // Developed and tested on Moodle 4.5 LTS.
 $plugin->maturity     = MATURITY_BETA;

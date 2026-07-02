@@ -50,5 +50,14 @@ function xmldb_local_stackhinter_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026070107, 'local', 'stackhinter');
     }
 
+    if ($oldversion < 2026070115) {
+        // Guard on-device hints server-side before display: default ON for existing installs too (it is
+        // a safety feature; a site can still disable it in settings).
+        if (get_config('local_stackhinter', 'ondeviceguard') === false) {
+            set_config('ondeviceguard', 1, 'local_stackhinter');
+        }
+        upgrade_plugin_savepoint(true, 2026070115, 'local', 'stackhinter');
+    }
+
     return true;
 }

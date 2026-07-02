@@ -70,6 +70,7 @@ class hook_callbacks {
                 'loading'     => get_string('ondeviceloading', 'local_stackhinter'),
                 'download'    => get_string('ondevicedownload', 'local_stackhinter'),
                 'nowebgpu'    => get_string('ondevicenowebgpu', 'local_stackhinter'),
+                'checking'    => get_string('ondevicechecking', 'local_stackhinter'),
             ],
         ];
 

@@ -55,6 +55,14 @@ if ($hassiteconfig) {
         ]
     ));
 
+    // Guard on-device hints server-side before display (defence in depth on top of the safe model).
+    $settings->add(new admin_setting_configcheckbox(
+        'local_stackhinter/ondeviceguard',
+        get_string('ondeviceguard', 'local_stackhinter'),
+        get_string('ondeviceguard_desc', 'local_stackhinter'),
+        1
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_stackhinter/ownheading',
         get_string('ownheading', 'local_stackhinter'),
